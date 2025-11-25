@@ -34,10 +34,16 @@ export const routes = [
         element: <Home />,
       },
       {
-        icon: <ShoppingCartIcon {...icon} />, 
-        name: "orders", 
-        path: "/orders", 
-        element: <Orders />, 
+        icon: <UserGroupIcon {...icon} />,
+        name: "users",
+        path: "/users",
+        element: <User />,
+      },
+      {
+        icon: <ShoppingCartIcon {...icon} />,
+        name: "orders",
+        path: "/orders",
+        element: <Orders />,
       },
       {
         icon: <DocumentTextIcon {...icon} />,
@@ -50,12 +56,6 @@ export const routes = [
         name: "privacy policy",
         path: "/privacy",
         element: <Privecy />,
-      },
-      {
-        icon: <UserGroupIcon {...icon} />,
-        name: "users",
-        path: "/users",
-        element: <User />,
       },
       {
         icon: <SignalIcon {...icon} />,
