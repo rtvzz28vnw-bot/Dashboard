@@ -29,27 +29,28 @@ import {
   Progress,
 } from "@material-tailwind/react";
 import {
-  PencilIcon,
-  ShieldCheckIcon,
-  CheckCircleIcon,
-  ExclamationCircleIcon,
-  ClockIcon,
-  UserCircleIcon,
-  ArrowPathIcon,
-  EyeIcon,
-  DocumentDuplicateIcon,
-  CalendarDaysIcon,
-  SparklesIcon,
-  LockClosedIcon,
-  InformationCircleIcon,
-  KeyIcon,
-  FingerPrintIcon,
-} from "@heroicons/react/24/outline";
-import {
-  CheckCircleIcon as CheckCircleSolidIcon,
-  ClockIcon as ClockSolidIcon,
-  ShieldCheckIcon as ShieldCheckSolidIcon,
-} from "@heroicons/react/24/solid";
+  Shield,
+  Eye,
+  FileText,
+  Calendar,
+  User,
+  Clock,
+  Pencil,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  RefreshCw,
+  Lock,
+  Key,
+  Fingerprint,
+  Sparkles,
+  Info,
+  Save,
+  X,
+  ExternalLink,
+  Copy,
+  Database,
+} from "lucide-react";
 import axios from "axios";
 
 const Privacy = () => {
@@ -58,6 +59,7 @@ const Privacy = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [openEditDialog, setOpenEditDialog] = useState(false);
+  const [openViewDialog, setOpenViewDialog] = useState(false);
   const [activeTab, setActiveTab] = useState("preview");
   const [editForm, setEditForm] = useState({
     title: "",
@@ -160,123 +162,159 @@ const Privacy = () => {
 
   if (loading && !policyData) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
-        <Card className="w-96 shadow-2xl">
-          <CardBody className="text-center p-10">
-            <div className="relative w-20 h-20 mx-auto mb-6">
-              <div className="absolute inset-0 bg-indigo-500 rounded-full animate-ping opacity-20"></div>
-              <div className="relative w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center">
-                <ArrowPathIcon className="w-10 h-10 text-white animate-spin" />
-              </div>
-            </div>
-            <Typography variant="h5" color="blue-gray" className="mb-2">
-              Loading Privacy Policy
-            </Typography>
-            <Typography variant="small" color="gray" className="font-normal">
-              Please wait while we retrieve the document...
-            </Typography>
-            <Progress value={70} color="indigo" className="mt-4" />
-          </CardBody>
-        </Card>
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <RefreshCw className="w-12 h-12 text-blue-500 animate-spin mb-4" />
+        <Typography variant="h6" color="blue-gray">
+          Loading Privacy Policy...
+        </Typography>
+        <Progress value={70} color="blue" className="mt-4 w-64" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 py-8">
-      <div className="container mx-auto px-4">
-        {/* Enhanced Header Section */}
+    <div className="min-h-screen py-8 px-4">
+      <div className="container mx-auto">
+        {/* Header Section */}
         <div className="mb-8">
-          <Card className="overflow-hidden shadow-xl border border-indigo-100">
-            <div className="bg-gradient-to-r from-indigo-600 via-purple-500 to-pink-600 p-8">
-              <div className="flex items-center justify-between flex-wrap gap-4">
+          <Card className="overflow-hidden shadow-xl border border-blue-gray-100">
+            <CardHeader
+              variant="gradient"
+              color="blue"
+              className="p-8 shadow-lg"
+            >
+              <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
                 <div className="flex items-center gap-4">
                   <div className="w-16 h-16 bg-white/20 backdrop-blur-lg rounded-2xl flex items-center justify-center shadow-lg">
-                    <ShieldCheckIcon className="w-8 h-8 text-white" />
+                    <Shield className="w-8 h-8 text-white" />
                   </div>
                   <div>
-                    <Typography variant="h2" color="white" className="mb-1">
+                    <Typography
+                      variant="h3"
+                      color="white"
+                      className="font-bold mb-1"
+                    >
                       Privacy Policy
                     </Typography>
                     <Typography
                       variant="paragraph"
-                      className="text-purple-100 font-normal"
+                      className="text-blue-100 font-normal"
                     >
                       Manage how you collect, use, and protect user data
                     </Typography>
                   </div>
                 </div>
                 <div className="flex gap-3">
-                  <Tooltip content="View document">
+                  <Tooltip content="View Full Document">
                     <IconButton
                       size="lg"
-                      className="bg-white/20 backdrop-blur-lg hover:bg-white/30"
+                      className="bg-white/20 backdrop-blur-lg hover:bg-white/30 transition-all"
+                      onClick={() => setOpenViewDialog(true)}
                     >
-                      <EyeIcon className="w-5 h-5 text-white" />
+                      <Eye className="w-5 h-5 text-white" />
                     </IconButton>
                   </Tooltip>
                   <Button
                     size="lg"
-                    className="flex items-center gap-2 bg-white text-indigo-600 hover:bg-indigo-50 shadow-lg"
+                    className="flex items-center gap-2 bg-white text-blue-600 hover:bg-blue-50 shadow-lg hover:shadow-xl transition-all"
                     onClick={handleOpenEditDialog}
                     disabled={loading || !policyData}
                   >
-                    <PencilIcon className="w-5 h-5" />
+                    <Pencil className="w-5 h-5" />
                     Edit Policy
                   </Button>
                 </div>
               </div>
 
               {/* Stats Row */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
-                <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 border border-white/20">
-                  <Typography variant="small" className="text-purple-100 mb-1">
-                    Version
-                  </Typography>
-                  <Typography variant="h4" color="white">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 border border-white/20 hover:bg-white/15 transition-all">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                      <FileText className="w-5 h-5 text-white" />
+                    </div>
+                    <Typography
+                      variant="small"
+                      className="text-blue-100 uppercase font-semibold"
+                    >
+                      Version
+                    </Typography>
+                  </div>
+                  <Typography variant="h4" color="white" className="font-bold">
                     {policyData?.version || "N/A"}
                   </Typography>
                 </div>
-                <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 border border-white/20">
-                  <Typography variant="small" className="text-purple-100 mb-1">
-                    Status
-                  </Typography>
+
+                <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 border border-white/20 hover:bg-white/15 transition-all">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                      <CheckCircle className="w-5 h-5 text-white" />
+                    </div>
+                    <Typography
+                      variant="small"
+                      className="text-blue-100 uppercase font-semibold"
+                    >
+                      Status
+                    </Typography>
+                  </div>
                   <div className="flex items-center gap-2">
                     <div
-                      className={`w-2 h-2 rounded-full ${
+                      className={`w-3 h-3 rounded-full ${
                         policyData?.isActive ? "bg-green-400" : "bg-gray-400"
                       } animate-pulse`}
                     ></div>
-                    <Typography variant="h6" color="white">
+                    <Typography
+                      variant="h6"
+                      color="white"
+                      className="font-bold"
+                    >
                       {policyData?.isActive ? "Active" : "Inactive"}
                     </Typography>
                   </div>
                 </div>
-                <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 border border-white/20">
-                  <Typography variant="small" className="text-purple-100 mb-1">
-                    Last Updated
-                  </Typography>
-                  <Typography variant="h6" color="white">
+
+                <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 border border-white/20 hover:bg-white/15 transition-all">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                      <Clock className="w-5 h-5 text-white" />
+                    </div>
+                    <Typography
+                      variant="small"
+                      className="text-blue-100 uppercase font-semibold"
+                    >
+                      Last Updated
+                    </Typography>
+                  </div>
+                  <Typography variant="h6" color="white" className="font-bold">
                     {policyData?.updatedAt
                       ? new Date(policyData.updatedAt).toLocaleDateString(
                           "en-US",
-                          { month: "short", day: "numeric" }
+                          { month: "short", day: "numeric", year: "numeric" }
                         )
                       : "N/A"}
                   </Typography>
                 </div>
-                <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 border border-white/20">
-                  <Typography variant="small" className="text-purple-100 mb-1">
-                    Content Size
-                  </Typography>
-                  <Typography variant="h6" color="white">
+
+                <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 border border-white/20 hover:bg-white/15 transition-all">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                      <Database className="w-5 h-5 text-white" />
+                    </div>
+                    <Typography
+                      variant="small"
+                      className="text-blue-100 uppercase font-semibold"
+                    >
+                      Content Size
+                    </Typography>
+                  </div>
+                  <Typography variant="h6" color="white" className="font-bold">
                     {policyData?.content
                       ? `${Math.ceil(policyData.content.length / 1000)}KB`
                       : "0KB"}
                   </Typography>
                 </div>
               </div>
-            </div>
+            </CardHeader>
           </Card>
         </div>
 
@@ -284,13 +322,13 @@ const Privacy = () => {
         {error && (
           <Alert
             color="red"
-            icon={<ExclamationCircleIcon className="w-6 h-6" />}
+            icon={<AlertCircle className="w-6 h-6" />}
             className="mb-6 shadow-lg border border-red-200"
             dismissible={{
               onClose: () => setError(null),
             }}
           >
-            <Typography variant="h6" className="mb-1">
+            <Typography variant="h6" className="mb-1 font-bold">
               Error Occurred
             </Typography>
             <Typography variant="small">{error}</Typography>
@@ -300,13 +338,13 @@ const Privacy = () => {
         {success && (
           <Alert
             color="green"
-            icon={<CheckCircleIcon className="w-6 h-6" />}
+            icon={<CheckCircle className="w-6 h-6" />}
             className="mb-6 shadow-lg border border-green-200"
             dismissible={{
               onClose: () => setSuccess(null),
             }}
           >
-            <Typography variant="h6" className="mb-1">
+            <Typography variant="h6" className="mb-1 font-bold">
               Success!
             </Typography>
             <Typography variant="small">{success}</Typography>
@@ -318,20 +356,25 @@ const Privacy = () => {
           {/* Sidebar - Document Info */}
           <div className="lg:col-span-1 space-y-6">
             {/* Document Information Card */}
-            <Card className="shadow-xl border border-gray-100 hover:shadow-2xl transition-shadow duration-300">
+            <Card className="shadow-xl border border-blue-gray-100 hover:shadow-2xl transition-shadow duration-300">
               <CardHeader
-                floated={false}
-                className="h-auto bg-gradient-to-br from-indigo-500 to-purple-600 shadow-md"
+                variant="gradient"
+                color="blue"
+                className="mb-0 p-6 shadow-lg"
               >
-                <div className="p-6 flex items-center gap-3">
+                <div className="flex items-center gap-3">
                   <div className="w-12 h-12 bg-white/20 backdrop-blur-lg rounded-lg flex items-center justify-center">
-                    <InformationCircleIcon className="w-6 h-6 text-white" />
+                    <Info className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <Typography variant="h5" color="white">
+                    <Typography
+                      variant="h6"
+                      color="white"
+                      className="font-bold"
+                    >
                       Policy Info
                     </Typography>
-                    <Typography variant="small" className="text-purple-100">
+                    <Typography variant="small" className="text-blue-100">
                       Current version details
                     </Typography>
                   </div>
@@ -339,10 +382,10 @@ const Privacy = () => {
               </CardHeader>
               <CardBody className="space-y-6">
                 {/* Version Badge */}
-                <div className="flex items-center justify-between p-4 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl border border-indigo-100">
+                <div className="flex items-center justify-between p-4 bg-blue-gray-50 rounded-xl border border-blue-gray-100">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
-                      <DocumentDuplicateIcon className="w-5 h-5 text-indigo-600" />
+                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <FileText className="w-5 h-5 text-blue-600" />
                     </div>
                     <div>
                       <Typography
@@ -352,7 +395,11 @@ const Privacy = () => {
                       >
                         Version
                       </Typography>
-                      <Typography variant="h6" color="blue-gray">
+                      <Typography
+                        variant="h6"
+                        color="blue-gray"
+                        className="font-bold"
+                      >
                         {policyData?.version || "N/A"}
                       </Typography>
                     </div>
@@ -360,13 +407,14 @@ const Privacy = () => {
                   <Chip
                     value="Current"
                     size="sm"
-                    className="bg-indigo-500"
-                    icon={<CheckCircleSolidIcon className="w-4 h-4" />}
+                    color="blue"
+                    variant="gradient"
+                    icon={<CheckCircle className="w-4 h-4" />}
                   />
                 </div>
 
                 {/* Status */}
-                <div className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-100">
+                <div className="p-4 bg-green-50 rounded-xl border border-green-100">
                   <div className="flex items-center justify-between mb-2">
                     <Typography
                       variant="small"
@@ -386,8 +434,9 @@ const Privacy = () => {
                       policyData?.isActive ? "Active & Published" : "Inactive"
                     }
                     color={policyData?.isActive ? "green" : "gray"}
+                    variant="gradient"
                     className="w-full justify-center"
-                    icon={<CheckCircleSolidIcon />}
+                    icon={<CheckCircle className="w-4 h-4" />}
                   />
                 </div>
 
@@ -398,15 +447,15 @@ const Privacy = () => {
                     color="gray"
                     className="font-semibold mb-3 flex items-center gap-2"
                   >
-                    <ClockIcon className="w-4 h-4" />
+                    <Clock className="w-4 h-4" />
                     Document Timeline
                   </Typography>
                   <Timeline>
                     <TimelineItem>
                       <TimelineConnector />
                       <TimelineHeader className="h-3">
-                        <TimelineIcon className="p-2 bg-indigo-500">
-                          <CalendarDaysIcon className="w-3 h-3 text-white" />
+                        <TimelineIcon className="p-2 bg-blue-500">
+                          <Calendar className="w-3 h-3 text-white" />
                         </TimelineIcon>
                         <Typography
                           variant="small"
@@ -434,7 +483,7 @@ const Privacy = () => {
                       <TimelineConnector />
                       <TimelineHeader className="h-3">
                         <TimelineIcon className="p-2 bg-green-500">
-                          <ClockSolidIcon className="w-3 h-3 text-white" />
+                          <Clock className="w-3 h-3 text-white" />
                         </TimelineIcon>
                         <Typography
                           variant="small"
@@ -463,7 +512,7 @@ const Privacy = () => {
                       <TimelineItem>
                         <TimelineHeader className="h-3">
                           <TimelineIcon className="p-2 bg-purple-500">
-                            <UserCircleIcon className="w-3 h-3 text-white" />
+                            <User className="w-3 h-3 text-white" />
                           </TimelineIcon>
                           <Typography
                             variant="small"
@@ -485,9 +534,9 @@ const Privacy = () => {
 
                 {/* Changes Summary */}
                 {policyData?.changesSummary && (
-                  <div className="p-4 bg-gradient-to-br from-amber-50 to-yellow-50 rounded-xl border border-amber-100">
+                  <div className="p-4 bg-amber-50 rounded-xl border border-amber-100">
                     <div className="flex items-center gap-2 mb-2">
-                      <SparklesIcon className="w-4 h-4 text-amber-600" />
+                      <Sparkles className="w-4 h-4 text-amber-600" />
                       <Typography
                         variant="small"
                         color="amber"
@@ -507,7 +556,7 @@ const Privacy = () => {
                 )}
 
                 {/* Quick Actions */}
-                <div className="pt-4 border-t border-gray-200">
+                <div className="pt-4 border-t border-blue-gray-200">
                   <Typography
                     variant="small"
                     color="gray"
@@ -517,21 +566,22 @@ const Privacy = () => {
                   </Typography>
                   <div className="space-y-2">
                     <Button
-                      variant="outlined"
+                      variant="gradient"
+                      color="blue"
                       size="sm"
                       className="w-full flex items-center justify-center gap-2"
                       onClick={handleOpenEditDialog}
                     >
-                      <PencilIcon className="w-4 h-4" />
+                      <Pencil className="w-4 h-4" />
                       Edit Document
                     </Button>
                     <Button
                       variant="outlined"
                       size="sm"
-                      color="green"
+                      color="blue"
                       className="w-full flex items-center justify-center gap-2"
                     >
-                      <DocumentDuplicateIcon className="w-4 h-4" />
+                      <Copy className="w-4 h-4" />
                       Create New Version
                     </Button>
                   </div>
@@ -540,15 +590,22 @@ const Privacy = () => {
             </Card>
 
             {/* Privacy Features Card */}
-            <Card className="shadow-xl border border-gray-100">
+            <Card className="shadow-xl border border-blue-gray-100">
               <CardBody className="p-6">
-                <Typography variant="h6" color="blue-gray" className="mb-4">
-                  Privacy Commitment
-                </Typography>
+                <div className="flex items-center gap-2 mb-4">
+                  <Shield className="w-5 h-5 text-blue-600" />
+                  <Typography
+                    variant="h6"
+                    color="blue-gray"
+                    className="font-bold"
+                  >
+                    Privacy Commitment
+                  </Typography>
+                </div>
                 <div className="space-y-3">
-                  <div className="flex items-start gap-3 p-3 bg-green-50 rounded-lg">
-                    <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <LockClosedIcon className="w-4 h-4 text-green-600" />
+                  <div className="flex items-start gap-3 p-3 bg-green-50 rounded-lg border border-green-100">
+                    <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Lock className="w-4 h-4 text-white" />
                     </div>
                     <div>
                       <Typography
@@ -563,9 +620,9 @@ const Privacy = () => {
                       </Typography>
                     </div>
                   </div>
-                  <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
-                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <KeyIcon className="w-4 h-4 text-blue-600" />
+                  <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                    <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Key className="w-4 h-4 text-white" />
                     </div>
                     <div>
                       <Typography
@@ -580,9 +637,9 @@ const Privacy = () => {
                       </Typography>
                     </div>
                   </div>
-                  <div className="flex items-start gap-3 p-3 bg-purple-50 rounded-lg">
-                    <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <FingerPrintIcon className="w-4 h-4 text-purple-600" />
+                  <div className="flex items-start gap-3 p-3 bg-purple-50 rounded-lg border border-purple-100">
+                    <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Fingerprint className="w-4 h-4 text-white" />
                     </div>
                     <div>
                       <Typography
@@ -602,17 +659,21 @@ const Privacy = () => {
             </Card>
 
             {/* Security Badge */}
-            <Card className="shadow-xl border border-gray-100 bg-gradient-to-br from-indigo-500 to-purple-600">
+            <Card className="shadow-xl border border-blue-gray-100 bg-gradient-to-br from-blue-500 to-blue-700">
               <CardBody className="text-center p-6">
                 <div className="w-16 h-16 bg-white/20 backdrop-blur-lg rounded-full flex items-center justify-center mx-auto mb-4">
-                  <ShieldCheckSolidIcon className="w-8 h-8 text-white" />
+                  <Shield className="w-8 h-8 text-white" />
                 </div>
-                <Typography variant="h6" color="white" className="mb-2">
+                <Typography
+                  variant="h6"
+                  color="white"
+                  className="mb-2 font-bold"
+                >
                   Privacy Protected
                 </Typography>
                 <Typography
                   variant="small"
-                  className="text-purple-100 leading-relaxed"
+                  className="text-blue-100 leading-relaxed"
                 >
                   Your users' data is protected with enterprise-grade security
                   measures.
@@ -623,11 +684,11 @@ const Privacy = () => {
 
           {/* Main Content Area */}
           <div className="lg:col-span-2">
-            <Card className="shadow-xl border border-gray-100">
+            <Card className="shadow-xl border border-blue-gray-100">
               <CardBody className="p-0">
                 <Tabs value={activeTab}>
                   <TabsHeader
-                    className="bg-gradient-to-r from-indigo-50 to-purple-50 p-2"
+                    className="bg-blue-gray-50 p-2"
                     indicatorProps={{
                       className: "bg-white shadow-md",
                     }}
@@ -637,13 +698,13 @@ const Privacy = () => {
                       onClick={() => setActiveTab("preview")}
                     >
                       <div className="flex items-center gap-2">
-                        <EyeIcon className="w-4 h-4" />
+                        <Eye className="w-4 h-4" />
                         <span>Preview</span>
                       </div>
                     </Tab>
                     <Tab value="raw" onClick={() => setActiveTab("raw")}>
                       <div className="flex items-center gap-2">
-                        <DocumentDuplicateIcon className="w-4 h-4" />
+                        <FileText className="w-4 h-4" />
                         <span>Raw Content</span>
                       </div>
                     </Tab>
@@ -654,7 +715,7 @@ const Privacy = () => {
                         <Typography
                           variant="h3"
                           color="blue-gray"
-                          className="mb-2"
+                          className="mb-2 font-bold"
                         >
                           {policyData?.title || "Privacy Policy"}
                         </Typography>
@@ -662,9 +723,15 @@ const Privacy = () => {
                           <Chip
                             value={`Version ${policyData?.version || "N/A"}`}
                             size="sm"
-                            className="bg-indigo-100 text-indigo-900"
+                            variant="gradient"
+                            color="blue"
                           />
-                          <Typography variant="small" color="gray">
+                          <Typography
+                            variant="small"
+                            color="gray"
+                            className="flex items-center gap-1"
+                          >
+                            <Clock className="w-4 h-4" />
                             Last updated:{" "}
                             {policyData?.updatedAt
                               ? new Date(
@@ -699,25 +766,158 @@ const Privacy = () => {
           </div>
         </div>
 
+        {/* View Full Document Dialog */}
+        <Dialog
+          open={openViewDialog}
+          handler={() => setOpenViewDialog(false)}
+          size="xxl"
+          className="shadow-2xl"
+        >
+          <DialogHeader className="bg-gradient-to-r from-blue-500 to-blue-700 text-white rounded-t-lg p-6">
+            <div className="flex items-center gap-3 w-full">
+              <div className="w-10 h-10 bg-white/20 backdrop-blur-lg rounded-lg flex items-center justify-center">
+                <Eye className="w-5 h-5" />
+              </div>
+              <div className="flex-1">
+                <Typography variant="h4" color="white" className="font-bold">
+                  {policyData?.title || "Privacy Policy"}
+                </Typography>
+                <Typography
+                  variant="small"
+                  className="text-blue-100 font-normal"
+                >
+                  Full document preview
+                </Typography>
+              </div>
+              <IconButton
+                color="white"
+                size="sm"
+                variant="text"
+                onClick={() => setOpenViewDialog(false)}
+                className="hover:bg-white/10"
+              >
+                <X className="h-5 w-5" />
+              </IconButton>
+            </div>
+          </DialogHeader>
+          <DialogBody className="max-h-[70vh] overflow-y-auto p-8">
+            {policyData && (
+              <div className="space-y-6">
+                {/* Document Header */}
+                <div className="pb-6 border-b border-blue-gray-100">
+                  <div className="flex items-center justify-between flex-wrap gap-4 mb-4">
+                    <div className="flex items-center gap-3">
+                      <Chip
+                        value={`Version ${policyData.version || "N/A"}`}
+                        size="sm"
+                        variant="gradient"
+                        color="blue"
+                        icon={<FileText className="w-3 h-3" />}
+                      />
+                      <Chip
+                        value={policyData.isActive ? "Active" : "Inactive"}
+                        size="sm"
+                        variant="gradient"
+                        color={policyData.isActive ? "green" : "gray"}
+                        icon={<CheckCircle className="w-3 h-3" />}
+                      />
+                    </div>
+                    <Typography
+                      variant="small"
+                      color="gray"
+                      className="flex items-center gap-1"
+                    >
+                      <Clock className="w-4 h-4" />
+                      Last updated:{" "}
+                      {policyData.updatedAt
+                        ? new Date(policyData.updatedAt).toLocaleDateString(
+                            "en-US",
+                            {
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                            }
+                          )
+                        : "N/A"}
+                    </Typography>
+                  </div>
+                  {policyData.effectiveDate && (
+                    <div className="flex items-center gap-2 text-blue-gray-600">
+                      <Calendar className="w-4 h-4" />
+                      <Typography variant="small">
+                        Effective from:{" "}
+                        {new Date(policyData.effectiveDate).toLocaleDateString(
+                          "en-US",
+                          {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          }
+                        )}
+                      </Typography>
+                    </div>
+                  )}
+                </div>
+
+                {/* Document Content */}
+                <div
+                  className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
+                  style={{
+                    fontFamily: "system-ui, -apple-system, sans-serif",
+                  }}
+                  dangerouslySetInnerHTML={{
+                    __html:
+                      policyData.content?.replace(/\n/g, "<br />") ||
+                      "No content available",
+                  }}
+                />
+              </div>
+            )}
+          </DialogBody>
+          <DialogFooter className="bg-blue-gray-50 gap-3 p-6">
+            <Button
+              variant="text"
+              color="blue-gray"
+              onClick={() => setOpenViewDialog(false)}
+              className="flex items-center gap-2"
+            >
+              <X className="w-5 h-5" />
+              Close
+            </Button>
+            <Button
+              variant="gradient"
+              color="blue"
+              onClick={() => {
+                setOpenViewDialog(false);
+                handleOpenEditDialog();
+              }}
+              className="flex items-center gap-2"
+            >
+              <Pencil className="w-5 h-5" />
+              Edit Policy
+            </Button>
+          </DialogFooter>
+        </Dialog>
+
         {/* Enhanced Edit Dialog */}
         <Dialog
           open={openEditDialog}
           handler={handleCloseEditDialog}
           size="xxl"
-          className="min-h-[90vh]"
+          className="min-h-[90vh] shadow-2xl"
         >
-          <DialogHeader className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-t-lg">
+          <DialogHeader className="bg-gradient-to-r from-blue-500 to-blue-700 text-white rounded-t-lg p-6">
             <div className="flex items-center gap-3 w-full">
               <div className="w-10 h-10 bg-white/20 backdrop-blur-lg rounded-lg flex items-center justify-center">
-                <PencilIcon className="w-5 h-5" />
+                <Pencil className="w-5 h-5" />
               </div>
               <div className="flex-1">
-                <Typography variant="h4" color="white">
+                <Typography variant="h4" color="white" className="font-bold">
                   Edit Privacy Policy
                 </Typography>
                 <Typography
                   variant="small"
-                  className="text-purple-100 font-normal"
+                  className="text-blue-100 font-normal"
                 >
                   Update your platform's privacy policy
                 </Typography>
@@ -729,20 +929,7 @@ const Privacy = () => {
                 onClick={handleCloseEditDialog}
                 className="hover:bg-white/10"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  className="h-5 w-5"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
+                <X className="h-5 w-5" />
               </IconButton>
             </div>
           </DialogHeader>
@@ -750,10 +937,10 @@ const Privacy = () => {
             {error && (
               <Alert
                 color="red"
-                icon={<ExclamationCircleIcon className="w-6 h-6" />}
+                icon={<AlertCircle className="w-6 h-6" />}
                 className="mb-6"
               >
-                <Typography variant="h6" className="mb-1">
+                <Typography variant="h6" className="mb-1 font-bold">
                   Error
                 </Typography>
                 <Typography variant="small">{error}</Typography>
@@ -763,10 +950,10 @@ const Privacy = () => {
             {success && (
               <Alert
                 color="green"
-                icon={<CheckCircleIcon className="w-6 h-6" />}
+                icon={<CheckCircle className="w-6 h-6" />}
                 className="mb-6"
               >
-                <Typography variant="h6" className="mb-1">
+                <Typography variant="h6" className="mb-1 font-bold">
                   Success!
                 </Typography>
                 <Typography variant="small">{success}</Typography>
@@ -775,8 +962,13 @@ const Privacy = () => {
 
             <div className="space-y-6">
               {/* Basic Information Section */}
-              <div>
-                <Typography variant="h6" color="blue-gray" className="mb-4">
+              <div className="p-4 border border-blue-gray-100 rounded-lg">
+                <Typography
+                  variant="h6"
+                  color="blue-gray"
+                  className="mb-4 font-bold flex items-center gap-2"
+                >
+                  <Info className="w-5 h-5 text-blue-600" />
                   Basic Information
                 </Typography>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -786,7 +978,7 @@ const Privacy = () => {
                     value={editForm.title}
                     onChange={handleInputChange}
                     size="lg"
-                    icon={<ShieldCheckIcon className="w-5 h-5" />}
+                    icon={<Shield className="w-5 h-5" />}
                   />
                   <Input
                     label="Version (e.g., 1.0.0)"
@@ -794,7 +986,7 @@ const Privacy = () => {
                     value={editForm.version}
                     onChange={handleInputChange}
                     size="lg"
-                    icon={<DocumentDuplicateIcon className="w-5 h-5" />}
+                    icon={<FileText className="w-5 h-5" />}
                   />
                   <Input
                     label="Effective Date"
@@ -803,7 +995,7 @@ const Privacy = () => {
                     value={editForm.effectiveDate}
                     onChange={handleInputChange}
                     size="lg"
-                    icon={<CalendarDaysIcon className="w-5 h-5" />}
+                    icon={<Calendar className="w-5 h-5" />}
                   />
                   <Input
                     label="Last Modified By"
@@ -811,14 +1003,19 @@ const Privacy = () => {
                     value={editForm.lastModifiedBy}
                     onChange={handleInputChange}
                     size="lg"
-                    icon={<UserCircleIcon className="w-5 h-5" />}
+                    icon={<User className="w-5 h-5" />}
                   />
                 </div>
               </div>
 
               {/* Changes Summary Section */}
-              <div>
-                <Typography variant="h6" color="blue-gray" className="mb-4">
+              <div className="p-4 border border-blue-gray-100 rounded-lg">
+                <Typography
+                  variant="h6"
+                  color="blue-gray"
+                  className="mb-4 font-bold flex items-center gap-2"
+                >
+                  <Sparkles className="w-5 h-5 text-amber-600" />
                   Changes Summary
                 </Typography>
                 <Textarea
@@ -832,8 +1029,13 @@ const Privacy = () => {
               </div>
 
               {/* Content Section */}
-              <div>
-                <Typography variant="h6" color="blue-gray" className="mb-4">
+              <div className="p-4 border border-blue-gray-100 rounded-lg">
+                <Typography
+                  variant="h6"
+                  color="blue-gray"
+                  className="mb-4 font-bold flex items-center gap-2"
+                >
+                  <Database className="w-5 h-5 text-blue-600" />
                   Policy Content
                 </Typography>
                 <Textarea
@@ -849,36 +1051,40 @@ const Privacy = () => {
                   color="gray"
                   className="mt-2 flex items-center gap-1"
                 >
-                  <InformationCircleIcon className="w-4 h-4" />
+                  <Info className="w-4 h-4" />
                   Use line breaks to format your content. HTML formatting is
                   supported.
                 </Typography>
               </div>
             </div>
           </DialogBody>
-          <DialogFooter className="bg-gray-50 gap-3">
+          <DialogFooter className="bg-blue-gray-50 gap-3 p-6">
             <Button
-              variant="text"
+              variant="outlined"
               color="red"
               onClick={handleCloseEditDialog}
               size="lg"
+              className="flex items-center gap-2"
             >
+              <X className="w-5 h-5" />
               Cancel
             </Button>
             <Button
-              className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600"
+              variant="gradient"
+              color="blue"
               onClick={handleUpdatePolicy}
               disabled={loading}
               size="lg"
+              className="flex items-center gap-2"
             >
               {loading ? (
                 <>
-                  <ArrowPathIcon className="w-5 h-5 animate-spin" />
+                  <RefreshCw className="w-5 h-5 animate-spin" />
                   Saving...
                 </>
               ) : (
                 <>
-                  <CheckCircleIcon className="w-5 h-5" />
+                  <Save className="w-5 h-5" />
                   Save Changes
                 </>
               )}
