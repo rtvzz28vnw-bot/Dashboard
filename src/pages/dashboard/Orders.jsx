@@ -38,6 +38,258 @@ import {
 } from "lucide-react";
 import Swal from "sweetalert2";
 
+// Helper function for color brightness
+function adjustColorBrightness(color, percent) {
+  const num = parseInt(color.replace("#", ""), 16);
+  const amt = Math.round(2.55 * percent);
+  const R = (num >> 16) + amt;
+  const G = ((num >> 8) & 0xff) + amt;
+  const B = (num & 0xff) + amt;
+  return (
+    "#" +
+    (
+      0x1000000 +
+      (Math.min(255, Math.max(0, R)) << 16) +
+      (Math.min(255, Math.max(0, G)) << 8) +
+      Math.min(255, Math.max(0, B))
+    )
+      .toString(16)
+      .slice(1)
+  );
+}
+
+// Card Design Preview Component
+function CardDesignPreview({ order }) {
+  const [imageLoading, setImageLoading] = useState(true);
+  const [imageError, setImageError] = useState(false);
+
+  // Determine background style based on design mode
+  const getCardBackground = () => {
+    // Priority 1: Custom uploaded image
+    if (order.customDesignUrl) {
+      return {
+        backgroundImage: `url(${order.customDesignUrl})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      };
+    }
+
+    // Priority 2: AI-generated background
+    if (order.cardDesignMode === "ai" && order.cardAiBackground) {
+      return {
+        backgroundImage: `url(${order.cardAiBackground})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      };
+    }
+
+    // Priority 3: Template
+    if (order.cardDesignMode === "template" && order.cardTemplate) {
+      return {
+        backgroundImage: `url(/templates/full/${order.cardTemplate}.webp)`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      };
+    }
+
+    // Priority 4: Manual color
+    const color = order.cardColor || "#2563eb";
+    return {
+      background: `linear-gradient(135deg, ${color} 0%, ${adjustColorBrightness(
+        color,
+        -30
+      )} 100%)`,
+    };
+  };
+
+  const cardStyle = getCardBackground();
+  const hasBackgroundImage =
+    order.customDesignUrl ||
+    order.cardAiBackground ||
+    (order.cardDesignMode === "template" && order.cardTemplate);
+
+  // Preload image
+  useEffect(() => {
+    if (hasBackgroundImage) {
+      const backgroundUrl =
+        order.customDesignUrl ||
+        order.cardAiBackground ||
+        `/templates/full/${order.cardTemplate}.webp`;
+
+      const img = new Image();
+      img.onload = () => {
+        setImageLoading(false);
+        setImageError(false);
+      };
+      img.onerror = () => {
+        setImageLoading(false);
+        setImageError(true);
+      };
+      img.src = backgroundUrl;
+    } else {
+      setImageLoading(false);
+    }
+  }, [order, hasBackgroundImage]);
+
+  return (
+    <div className="space-y-3">
+      {/* Design Mode Badge */}
+      <div className="flex items-center justify-center gap-2">
+        <Chip
+          variant="gradient"
+          size="sm"
+          color="blue"
+          value={
+            order.customDesignUrl
+              ? "📸 Custom Upload"
+              : order.cardDesignMode === "ai"
+              ? "🎨 AI Generated"
+              : order.cardDesignMode === "template"
+              ? "📋 Template"
+              : "🎨 Manual Color"
+          }
+        />
+      </div>
+
+      {/* Card Preview */}
+      <div
+        className="relative w-full max-w-[360px] h-[220px] rounded-[24px] shadow-2xl overflow-hidden mx-auto"
+        style={{
+          ...cardStyle,
+          aspectRatio: "1.586 / 1",
+        }}
+      >
+        {/* Loading Overlay */}
+        {imageLoading && hasBackgroundImage && (
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-900/90 to-blue-900/90 backdrop-blur-sm flex items-center justify-center z-20">
+            <div className="text-center">
+              <RefreshCw className="w-8 h-8 text-white animate-spin mx-auto mb-2" />
+              <p className="text-white text-xs font-medium">
+                Loading Design...
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Error Overlay */}
+        {imageError && hasBackgroundImage && (
+          <div className="absolute inset-0 bg-gradient-to-br from-red-900/90 to-orange-900/90 backdrop-blur-sm flex items-center justify-center z-20">
+            <div className="text-center px-4">
+              <p className="text-white text-xs font-medium">
+                Failed to load design
+              </p>
+              <p className="text-white/70 text-[10px] mt-1">Using fallback</p>
+            </div>
+          </div>
+        )}
+
+        {/* Overlay for better text visibility */}
+        <div className="absolute inset-0 bg-gradient-to-br from-black/40 to-black/20" />
+
+        {/* Card Content */}
+        <div className="relative z-10 h-full flex flex-col justify-between px-5 py-4 text-white">
+          {/* Top Section */}
+          <div className="flex items-center gap-3">
+            {order.profile?.avatarUrl ? (
+              <img
+                src={order.profile.avatarUrl}
+                alt="Profile"
+                className={`w-12 h-12 object-cover border-2 ${
+                  order.cardType === "personal" ? "rounded-full" : "rounded-lg"
+                } shadow-lg border-white/50`}
+              />
+            ) : (
+              <div
+                className={`w-12 h-12 flex items-center justify-center border-2 ${
+                  order.cardType === "personal" ? "rounded-full" : "rounded-lg"
+                } bg-white/20 backdrop-blur-sm border-white/50`}
+              >
+                {order.cardType === "personal" ? (
+                  <User className="w-6 h-6" />
+                ) : (
+                  <CreditCard className="w-6 h-6" />
+                )}
+              </div>
+            )}
+            <div>
+              <p className="text-sm font-semibold opacity-90">Dot LinkMe</p>
+              <p className="text-xs opacity-70">Smart NFC Digital Identity</p>
+            </div>
+          </div>
+
+          {/* Middle Section */}
+          <div>
+            <h3 className="text-lg font-bold tracking-tight">
+              {order.profile?.name ||
+                `${order.customerFirstName} ${order.customerLastName}`}
+            </h3>
+            <p className="text-xs opacity-80">
+              {order.profile?.title ||
+                (order.cardType === "personal"
+                  ? "Personal Card"
+                  : "Business Card")}
+            </p>
+            <p className="text-[11px] opacity-75 line-clamp-2">
+              {order.profile?.bio || "Smart NFC Digital Identity Card"}
+            </p>
+          </div>
+
+          {/* Bottom Section */}
+          <div className="flex items-center gap-2 text-[10px]">
+            <span className="px-2 py-1 rounded-full bg-black/20 text-white">
+              {order.cardType === "personal" ? "Personal" : "Business"}
+            </span>
+            <span className="px-2 py-1 rounded-full bg-black/20 text-white">
+              NFC • QR
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Design Details - ✅ FIXED: Only show relevant details based on design mode */}
+      <div className="bg-gray-50 rounded-lg p-3 text-xs space-y-1">
+        {/* Show template only if designMode is template or manual */}
+        {(order.cardDesignMode === "template" ||
+          order.cardDesignMode === "manual") && (
+          <div className="flex items-center justify-between">
+            <span className="text-gray-600">Template:</span>
+            <span className="font-medium">{order.cardTemplate || "None"}</span>
+          </div>
+        )}
+
+        {/* Show color only if designMode is manual */}
+        {order.cardDesignMode === "manual" && order.cardColor && (
+          <div className="flex items-center justify-between">
+            <span className="text-gray-600">Color:</span>
+            <div className="flex items-center gap-2">
+              <div
+                className="w-5 h-5 rounded border border-gray-300"
+                style={{ backgroundColor: order.cardColor }}
+              />
+              <span className="font-mono text-xs">{order.cardColor}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Show AI background only if designMode is ai */}
+        {order.cardDesignMode === "ai" && order.cardAiBackground && (
+          <p className="text-green-600 flex items-center gap-1">
+            <CheckCircle className="w-3 h-3" /> AI Background Applied
+          </p>
+        )}
+
+        {/* Show custom upload only if customDesignUrl exists */}
+        {order.customDesignUrl && (
+          <p className="text-purple-600 flex items-center gap-1">
+            <CheckCircle className="w-3 h-3" /> Custom Image Uploaded
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Main Orders Component
 export function Orders() {
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState([]);
@@ -741,7 +993,7 @@ export function Orders() {
                   </Card>
                 </div>
 
-                {/* Card Design */}
+                {/* Card Design - ✅ FIXED: Only show relevant fields */}
                 <div className="p-4 border border-blue-gray-100 rounded-lg">
                   <Typography
                     variant="small"
@@ -774,21 +1026,27 @@ export function Orders() {
                         />
                       </div>
                     </div>
-                    <div className="flex items-start gap-2">
-                      <FileText className="w-4 h-4 text-blue-gray-400 mt-1" />
-                      <div>
-                        <Typography
-                          variant="small"
-                          color="blue-gray"
-                          className="font-semibold"
-                        >
-                          Template
-                        </Typography>
-                        <Typography variant="small" color="gray">
-                          {selectedOrder.cardTemplate}
-                        </Typography>
-                      </div>
-                    </div>
+
+                    {/* Only show template if not AI or custom */}
+                    {selectedOrder.cardDesignMode !== "ai" &&
+                      !selectedOrder.customDesignUrl && (
+                        <div className="flex items-start gap-2">
+                          <FileText className="w-4 h-4 text-blue-gray-400 mt-1" />
+                          <div>
+                            <Typography
+                              variant="small"
+                              color="blue-gray"
+                              className="font-semibold"
+                            >
+                              Template
+                            </Typography>
+                            <Typography variant="small" color="gray">
+                              {selectedOrder.cardTemplate || "Default"}
+                            </Typography>
+                          </div>
+                        </div>
+                      )}
+
                     <div className="flex items-start gap-2">
                       <Palette className="w-4 h-4 text-blue-gray-400 mt-1" />
                       <div>
@@ -802,8 +1060,12 @@ export function Orders() {
                         <Chip
                           variant="ghost"
                           value={
-                            selectedOrder.cardDesignMode === "ai"
+                            selectedOrder.customDesignUrl
+                              ? "Custom Upload"
+                              : selectedOrder.cardDesignMode === "ai"
                               ? "AI Generated"
+                              : selectedOrder.cardDesignMode === "template"
+                              ? "Template"
                               : "Manual"
                           }
                           size="sm"
@@ -811,34 +1073,51 @@ export function Orders() {
                         />
                       </div>
                     </div>
-                    {selectedOrder.cardColor && (
-                      <div className="flex items-start gap-2">
-                        <Palette className="w-4 h-4 text-blue-gray-400 mt-1" />
-                        <div>
-                          <Typography
-                            variant="small"
-                            color="blue-gray"
-                            className="font-semibold"
-                          >
-                            Color
-                          </Typography>
-                          <div className="flex items-center gap-2 mt-1">
-                            <div
-                              className="w-8 h-8 rounded-lg border-2 border-gray-300 shadow-sm"
-                              style={{
-                                backgroundColor: selectedOrder.cardColor,
-                              }}
-                            />
+
+                    {/* Only show color if manual mode */}
+                    {selectedOrder.cardDesignMode === "manual" &&
+                      selectedOrder.cardColor && (
+                        <div className="flex items-start gap-2">
+                          <Palette className="w-4 h-4 text-blue-gray-400 mt-1" />
+                          <div>
                             <Typography
                               variant="small"
-                              className="font-mono text-blue-gray-700"
+                              color="blue-gray"
+                              className="font-semibold"
                             >
-                              {selectedOrder.cardColor}
+                              Color
                             </Typography>
+                            <div className="flex items-center gap-2 mt-1">
+                              <div
+                                className="w-8 h-8 rounded-lg border-2 border-gray-300 shadow-sm"
+                                style={{
+                                  backgroundColor: selectedOrder.cardColor,
+                                }}
+                              />
+                              <Typography
+                                variant="small"
+                                className="font-mono text-blue-gray-700"
+                              >
+                                {selectedOrder.cardColor}
+                              </Typography>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    )}
+                      )}
+                  </div>
+                </div>
+
+                {/* Card Design Preview */}
+                <div className="p-4 border border-blue-gray-100 rounded-lg">
+                  <Typography
+                    variant="small"
+                    className="font-bold uppercase text-blue-gray-600 flex items-center gap-2 mb-4"
+                  >
+                    <Palette className="w-4 h-4" />
+                    Card Design Preview
+                  </Typography>
+                  <div className="flex justify-center">
+                    <CardDesignPreview order={selectedOrder} />
                   </div>
                 </div>
 
