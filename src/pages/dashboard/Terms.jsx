@@ -47,16 +47,24 @@ import {
   Copy,
   Database,
   Scale,
+  Download,
+  AlertTriangle,
 } from "lucide-react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
+import DOMPurify from "dompurify";
 
 const Terms = () => {
+  const navigate = useNavigate();
   const [termsData, setTermsData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [openEditDialog, setOpenEditDialog] = useState(false);
+  const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
+  const [openViewDialog, setOpenViewDialog] = useState(false);
   const [activeTab, setActiveTab] = useState("preview");
+  const [formErrors, setFormErrors] = useState({});
   const [editForm, setEditForm] = useState({
     title: "",
     content: "",
@@ -68,37 +76,89 @@ const Terms = () => {
 
   const API_URL = import.meta.env.VITE_API_URL;
 
+  // Authorization check
   useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/admin/login");
+      return;
+    }
     fetchTermsAndConditions();
-  }, []);
+
+    // Load draft if exists
+    const draft = localStorage.getItem("terms-draft");
+    if (draft) {
+      try {
+        const parsedDraft = JSON.parse(draft);
+        // Optional: Ask user if they want to restore draft
+        console.log("Draft found:", parsedDraft);
+      } catch (e) {
+        console.error("Failed to parse draft:", e);
+      }
+    }
+  }, [navigate]);
+
+  // Auto-save draft
+  useEffect(() => {
+    if (openEditDialog && editForm.content) {
+      const timer = setTimeout(() => {
+        localStorage.setItem("terms-draft", JSON.stringify(editForm));
+      }, 2000); // Auto-save after 2 seconds of inactivity
+      return () => clearTimeout(timer);
+    }
+  }, [editForm, openEditDialog]);
 
   const fetchTermsAndConditions = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const response = await axios.get(`${API_URL}/api/terms`);
+      const token = localStorage.getItem("token");
+      const response = await axios.get(`${API_URL}/api/terms`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      console.log("📥 Fetched terms data:", response.data);
 
       if (response.data.success) {
-        setTermsData(response.data.data);
+        const termsDoc = response.data.data;
+
+        // ⚠️ IMPORTANT: Check if ID exists
+        if (!termsDoc.id) {
+          console.error("❌ Terms document has no ID:", termsDoc);
+          setError("Terms document is missing an ID. Please contact support.");
+          return;
+        }
+
+        console.log("✅ Terms ID:", termsDoc.id);
+
+        setTermsData(termsDoc);
         setEditForm({
-          title: response.data.data.title || "",
-          content: response.data.data.content || "",
-          version: response.data.data.version || "",
-          effectiveDate: response.data.data.effectiveDate
-            ? new Date(response.data.data.effectiveDate)
-                .toISOString()
-                .split("T")[0]
+          title: termsDoc.title || "",
+          content: termsDoc.content || "",
+          version: termsDoc.version || "",
+          effectiveDate: termsDoc.effectiveDate
+            ? new Date(termsDoc.effectiveDate).toISOString().split("T")[0]
             : "",
-          lastModifiedBy: response.data.data.lastModifiedBy || "",
-          changesSummary: response.data.data.changesSummary || "",
+          lastModifiedBy: termsDoc.lastModifiedBy || "",
+          changesSummary: termsDoc.changesSummary || "",
         });
       }
     } catch (err) {
-      console.error("Error fetching terms:", err);
-      setError(
-        err.response?.data?.message || "Failed to load terms and conditions"
-      );
+      console.error("❌ Error fetching terms:", err);
+      console.error("❌ Response:", err.response?.data);
+
+      if (err.response?.status === 401) {
+        navigate("/admin/login");
+      } else if (err.response?.status === 403) {
+        setError("You don't have permission to access this page");
+      } else {
+        setError(
+          err.response?.data?.message || "Failed to load terms and conditions"
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -108,12 +168,22 @@ const Terms = () => {
     setOpenEditDialog(true);
     setError(null);
     setSuccess(null);
+    setFormErrors({});
   };
 
   const handleCloseEditDialog = () => {
     setOpenEditDialog(false);
     setError(null);
     setSuccess(null);
+    setFormErrors({});
+  };
+
+  const handleOpenViewDialog = () => {
+    setOpenViewDialog(true);
+  };
+
+  const handleCloseViewDialog = () => {
+    setOpenViewDialog(false);
   };
 
   const handleInputChange = (e) => {
@@ -122,6 +192,55 @@ const Terms = () => {
       ...prev,
       [name]: value,
     }));
+
+    // Clear specific field error when user starts typing
+    if (formErrors[name]) {
+      setFormErrors((prev) => ({
+        ...prev,
+        [name]: null,
+      }));
+    }
+  };
+
+  const validateForm = () => {
+    const errors = {};
+
+    if (!editForm.title || editForm.title.trim() === "") {
+      errors.title = "Title is required";
+    }
+
+    if (!editForm.content || editForm.content.trim() === "") {
+      errors.content = "Content is required";
+    }
+
+    if (!editForm.version || editForm.version.trim() === "") {
+      errors.version = "Version is required";
+    } else if (!/^\d+\.\d+\.\d+$/.test(editForm.version)) {
+      errors.version = "Version must be in format X.Y.Z (e.g., 1.0.0)";
+    }
+
+    if (!editForm.effectiveDate) {
+      errors.effectiveDate = "Effective date is required";
+    }
+
+    if (!editForm.lastModifiedBy || editForm.lastModifiedBy.trim() === "") {
+      errors.lastModifiedBy = "Modified by field is required";
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleOpenConfirmDialog = () => {
+    if (!validateForm()) {
+      setError("Please fix all validation errors before saving");
+      return;
+    }
+    setOpenConfirmDialog(true);
+  };
+
+  const handleCloseConfirmDialog = () => {
+    setOpenConfirmDialog(false);
   };
 
   const handleUpdateTerms = async () => {
@@ -130,29 +249,176 @@ const Terms = () => {
       setError(null);
       setSuccess(null);
 
-      const response = await axios.put(`${API_URL}/api/terms/${termsData.id}`, {
-        ...editForm,
+      const token = localStorage.getItem("token");
+
+      const updatePayload = {
+        title: editForm.title,
+        content: editForm.content,
+        version: editForm.version,
         effectiveDate: editForm.effectiveDate
           ? new Date(editForm.effectiveDate).toISOString()
-          : undefined,
-      });
+          : null,
+        lastModifiedBy: editForm.lastModifiedBy,
+        changesSummary: editForm.changesSummary || "",
+        isActive: true,
+      };
+
+      console.log("🔄 Starting update...");
+      console.log("📝 Update payload:", updatePayload);
+      console.log("🔑 Token:", token ? "Present" : "Missing");
+      console.log("🎯 URL:", `${API_URL}/api/terms/${termsData.id}`);
+      console.log("🆔 Terms ID:", termsData.id);
+
+      const response = await axios.put(
+        `${API_URL}/api/terms/${termsData.id}`,
+        updatePayload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      console.log("✅ Update response:", response.data);
 
       if (response.data.success) {
         setSuccess("Terms & Conditions updated successfully!");
         setTermsData(response.data.data);
+
+        // Clear draft after successful save
+        localStorage.removeItem("terms-draft");
+
         setTimeout(() => {
+          handleCloseConfirmDialog();
           handleCloseEditDialog();
           fetchTermsAndConditions();
         }, 1500);
+      } else {
+        console.error("❌ Update failed:", response.data);
+        setError(response.data.message || "Failed to update");
       }
     } catch (err) {
-      console.error("Error updating terms:", err);
-      setError(
-        err.response?.data?.message || "Failed to update terms and conditions"
-      );
+      console.error("❌ FULL ERROR:", err);
+      console.error("❌ Error response:", err.response);
+      console.error("❌ Error status:", err.response?.status);
+      console.error("❌ Error data:", err.response?.data);
+
+      if (err.response?.status === 401) {
+        setError("Session expired. Please login again.");
+        setTimeout(() => navigate("/admin/login"), 2000);
+      } else if (err.response?.status === 403) {
+        setError("You don't have permission to edit terms");
+      } else if (err.response?.status === 404) {
+        setError("Terms & Conditions not found. ID: " + termsData?.id);
+      } else {
+        setError(
+          err.response?.data?.message ||
+            err.message ||
+            "Failed to update terms and conditions"
+        );
+      }
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCreateNewVersion = () => {
+    if (!termsData) return;
+
+    // Parse current version and increment
+    const currentVersion = termsData.version || "1.0.0";
+    const versionParts = currentVersion.split(".");
+    const newMinor = parseInt(versionParts[1] || 0) + 1;
+    const newVersion = `${versionParts[0]}.${newMinor}.0`;
+
+    setEditForm({
+      ...editForm,
+      version: newVersion,
+      effectiveDate: new Date().toISOString().split("T")[0],
+      changesSummary: "",
+    });
+
+    handleOpenEditDialog();
+  };
+
+  const handleExportAsPDF = () => {
+    // Create a printable version
+    const printWindow = window.open("", "_blank");
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${termsData?.title || "Terms & Conditions"}</title>
+          <style>
+            body {
+              font-family: 'Times New Roman', serif;
+              max-width: 800px;
+              margin: 40px auto;
+              padding: 20px;
+              line-height: 1.6;
+            }
+            h1 {
+              color: #1e40af;
+              border-bottom: 3px solid #1e40af;
+              padding-bottom: 10px;
+            }
+            .meta {
+              color: #666;
+              font-size: 14px;
+              margin: 20px 0;
+            }
+            .content {
+              margin-top: 30px;
+              white-space: pre-wrap;
+            }
+          </style>
+        </head>
+        <body>
+          <h1>${termsData?.title || "Terms & Conditions"}</h1>
+          <div class="meta">
+            <p><strong>Version:</strong> ${termsData?.version || "N/A"}</p>
+            <p><strong>Effective Date:</strong> ${
+              termsData?.effectiveDate
+                ? new Date(termsData.effectiveDate).toLocaleDateString(
+                    "en-US",
+                    {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    }
+                  )
+                : "N/A"
+            }</p>
+            <p><strong>Last Updated:</strong> ${
+              termsData?.updatedAt
+                ? new Date(termsData.updatedAt).toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })
+                : "N/A"
+            }</p>
+          </div>
+          <div class="content">${DOMPurify.sanitize(
+            termsData?.content || ""
+          )}</div>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+    }, 250);
+  };
+
+  const getCharacterCount = () => {
+    return editForm.content.length;
+  };
+
+  const getWordCount = () => {
+    return editForm.content.trim().split(/\s+/).filter(Boolean).length;
   };
 
   if (loading && !termsData) {
@@ -199,13 +465,23 @@ const Terms = () => {
                     </Typography>
                   </div>
                 </div>
-                <div className="flex gap-3">
-                  <Tooltip content="View document">
+                <div className="flex gap-3 flex-wrap">
+                  <Tooltip content="View full document">
                     <IconButton
                       size="lg"
                       className="bg-white/20 backdrop-blur-lg hover:bg-white/30"
+                      onClick={handleOpenViewDialog}
                     >
                       <Eye className="w-5 h-5 text-white" />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip content="Export as PDF">
+                    <IconButton
+                      size="lg"
+                      className="bg-white/20 backdrop-blur-lg hover:bg-white/30"
+                      onClick={handleExportAsPDF}
+                    >
+                      <Download className="w-5 h-5 text-white" />
                     </IconButton>
                   </Tooltip>
                   <Button
@@ -221,7 +497,7 @@ const Terms = () => {
               </div>
 
               {/* Stats Row */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
                 <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 border border-white/20">
                   <Typography
                     variant="small"
@@ -551,9 +827,20 @@ const Terms = () => {
                       size="sm"
                       color="blue"
                       className="w-full flex items-center justify-center gap-2"
+                      onClick={handleCreateNewVersion}
                     >
                       <Copy className="w-4 h-4" />
                       Create New Version
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      size="sm"
+                      color="green"
+                      className="w-full flex items-center justify-center gap-2"
+                      onClick={handleExportAsPDF}
+                    >
+                      <Download className="w-4 h-4" />
+                      Export as PDF
                     </Button>
                   </div>
                 </div>
@@ -644,19 +931,17 @@ const Terms = () => {
                         </div>
                       </div>
                       <div
-                        className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
+                        className="prose prose-sm max-w-none text-gray-700 leading-relaxed whitespace-pre-wrap"
                         style={{
                           fontFamily: "system-ui, -apple-system, sans-serif",
                         }}
-                        dangerouslySetInnerHTML={{
-                          __html:
-                            termsData?.content?.replace(/\n/g, "<br />") || "",
-                        }}
-                      />
+                      >
+                        {termsData?.content || "No content available"}
+                      </div>
                     </TabPanel>
                     <TabPanel value="raw" className="p-8">
                       <div className="bg-gray-900 rounded-xl p-6 overflow-x-auto">
-                        <pre className="text-green-400 text-sm font-mono">
+                        <pre className="text-green-400 text-sm font-mono whitespace-pre-wrap break-words">
                           {termsData?.content || "No content available"}
                         </pre>
                       </div>
@@ -667,6 +952,60 @@ const Terms = () => {
             </Card>
           </div>
         </div>
+
+        {/* View Full Document Dialog */}
+        <Dialog
+          open={openViewDialog}
+          handler={handleCloseViewDialog}
+          size="xl"
+          className="shadow-2xl"
+        >
+          <DialogHeader className="bg-gradient-to-r from-blue-500 to-blue-700 text-white rounded-t-lg p-6">
+            <div className="flex items-center justify-between w-full">
+              <div className="flex items-center gap-3">
+                <Eye className="w-6 h-6" />
+                <div>
+                  <Typography variant="h4" color="white" className="font-bold">
+                    {termsData?.title || "Terms & Conditions"}
+                  </Typography>
+                  <Typography variant="small" className="text-blue-100">
+                    Version {termsData?.version || "N/A"}
+                  </Typography>
+                </div>
+              </div>
+              <IconButton
+                color="white"
+                size="sm"
+                variant="text"
+                onClick={handleCloseViewDialog}
+                className="hover:bg-white/10"
+              >
+                <X className="h-5 w-5" />
+              </IconButton>
+            </div>
+          </DialogHeader>
+          <DialogBody className="overflow-y-auto max-h-[70vh] p-8">
+            <div
+              className="prose prose-sm max-w-none text-gray-700 leading-relaxed whitespace-pre-wrap"
+              style={{
+                fontFamily: "system-ui, -apple-system, sans-serif",
+              }}
+            >
+              {termsData?.content || "No content available"}
+            </div>
+          </DialogBody>
+          <DialogFooter className="bg-blue-gray-50">
+            <Button
+              variant="gradient"
+              color="blue"
+              onClick={handleExportAsPDF}
+              className="flex items-center gap-2"
+            >
+              <Download className="w-4 h-4" />
+              Export as PDF
+            </Button>
+          </DialogFooter>
+        </Dialog>
 
         {/* Enhanced Edit Dialog */}
         <Dialog
@@ -741,39 +1080,91 @@ const Terms = () => {
                   Basic Information
                 </Typography>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Input
-                    label="Document Title"
-                    name="title"
-                    value={editForm.title}
-                    onChange={handleInputChange}
-                    size="lg"
-                    icon={<FileText className="w-5 h-5" />}
-                  />
-                  <Input
-                    label="Version (e.g., 1.0.0)"
-                    name="version"
-                    value={editForm.version}
-                    onChange={handleInputChange}
-                    size="lg"
-                    icon={<FileText className="w-5 h-5" />}
-                  />
-                  <Input
-                    label="Effective Date"
-                    name="effectiveDate"
-                    type="date"
-                    value={editForm.effectiveDate}
-                    onChange={handleInputChange}
-                    size="lg"
-                    icon={<Calendar className="w-5 h-5" />}
-                  />
-                  <Input
-                    label="Last Modified By"
-                    name="lastModifiedBy"
-                    value={editForm.lastModifiedBy}
-                    onChange={handleInputChange}
-                    size="lg"
-                    icon={<User className="w-5 h-5" />}
-                  />
+                  <div>
+                    <Input
+                      label="Document Title"
+                      name="title"
+                      value={editForm.title}
+                      onChange={handleInputChange}
+                      size="lg"
+                      icon={<FileText className="w-5 h-5" />}
+                      error={!!formErrors.title}
+                    />
+                    {formErrors.title && (
+                      <Typography
+                        variant="small"
+                        color="red"
+                        className="mt-1 flex items-center gap-1"
+                      >
+                        <AlertCircle className="w-3 h-3" />
+                        {formErrors.title}
+                      </Typography>
+                    )}
+                  </div>
+                  <div>
+                    <Input
+                      label="Version (e.g., 1.0.0)"
+                      name="version"
+                      value={editForm.version}
+                      onChange={handleInputChange}
+                      size="lg"
+                      icon={<FileText className="w-5 h-5" />}
+                      error={!!formErrors.version}
+                    />
+                    {formErrors.version && (
+                      <Typography
+                        variant="small"
+                        color="red"
+                        className="mt-1 flex items-center gap-1"
+                      >
+                        <AlertCircle className="w-3 h-3" />
+                        {formErrors.version}
+                      </Typography>
+                    )}
+                  </div>
+                  <div>
+                    <Input
+                      label="Effective Date"
+                      name="effectiveDate"
+                      type="date"
+                      value={editForm.effectiveDate}
+                      onChange={handleInputChange}
+                      size="lg"
+                      icon={<Calendar className="w-5 h-5" />}
+                      error={!!formErrors.effectiveDate}
+                    />
+                    {formErrors.effectiveDate && (
+                      <Typography
+                        variant="small"
+                        color="red"
+                        className="mt-1 flex items-center gap-1"
+                      >
+                        <AlertCircle className="w-3 h-3" />
+                        {formErrors.effectiveDate}
+                      </Typography>
+                    )}
+                  </div>
+                  <div>
+                    <Input
+                      label="Last Modified By"
+                      name="lastModifiedBy"
+                      value={editForm.lastModifiedBy}
+                      onChange={handleInputChange}
+                      size="lg"
+                      icon={<User className="w-5 h-5" />}
+                      error={!!formErrors.lastModifiedBy}
+                    />
+                    {formErrors.lastModifiedBy && (
+                      <Typography
+                        variant="small"
+                        color="red"
+                        className="mt-1 flex items-center gap-1"
+                      >
+                        <AlertCircle className="w-3 h-3" />
+                        {formErrors.lastModifiedBy}
+                      </Typography>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -814,16 +1205,31 @@ const Terms = () => {
                   onChange={handleInputChange}
                   rows={15}
                   className="font-mono text-sm"
+                  error={!!formErrors.content}
                 />
-                <Typography
-                  variant="small"
-                  color="gray"
-                  className="mt-2 flex items-center gap-1"
-                >
-                  <Info className="w-4 h-4" />
-                  Use line breaks to format your content. HTML formatting is
-                  supported.
-                </Typography>
+                {formErrors.content && (
+                  <Typography
+                    variant="small"
+                    color="red"
+                    className="mt-1 flex items-center gap-1"
+                  >
+                    <AlertCircle className="w-3 h-3" />
+                    {formErrors.content}
+                  </Typography>
+                )}
+                <div className="mt-2 flex items-center justify-between">
+                  <Typography
+                    variant="small"
+                    color="gray"
+                    className="flex items-center gap-1"
+                  >
+                    <Info className="w-4 h-4" />
+                    Use line breaks to format your content
+                  </Typography>
+                  <Typography variant="small" color="gray">
+                    {getWordCount()} words • {getCharacterCount()} characters
+                  </Typography>
+                </div>
               </div>
             </div>
           </DialogBody>
@@ -841,20 +1247,81 @@ const Terms = () => {
             <Button
               variant="gradient"
               color="blue"
-              onClick={handleUpdateTerms}
+              onClick={handleOpenConfirmDialog}
               disabled={loading}
               size="lg"
               className="flex items-center gap-2"
             >
+              <Save className="w-5 h-5" />
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </Dialog>
+
+        {/* Confirmation Dialog */}
+        <Dialog
+          open={openConfirmDialog}
+          handler={handleCloseConfirmDialog}
+          size="sm"
+        >
+          <DialogHeader className="bg-amber-50 border-b border-amber-200">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                <AlertTriangle className="w-6 h-6 text-amber-600" />
+              </div>
+              <Typography variant="h5" color="blue-gray">
+                Confirm Changes
+              </Typography>
+            </div>
+          </DialogHeader>
+          <DialogBody className="space-y-4">
+            <Typography color="gray">
+              You are about to update the Terms & Conditions document. This
+              will:
+            </Typography>
+            <ul className="list-disc list-inside space-y-2 text-gray-700">
+              <li>
+                Update to version <strong>{editForm.version}</strong>
+              </li>
+              <li>
+                Set effective date to{" "}
+                <strong>
+                  {editForm.effectiveDate
+                    ? new Date(editForm.effectiveDate).toLocaleDateString()
+                    : "N/A"}
+                </strong>
+              </li>
+              <li>Be visible to all users immediately</li>
+            </ul>
+            <Typography color="gray" className="font-semibold">
+              Are you sure you want to proceed?
+            </Typography>
+          </DialogBody>
+          <DialogFooter className="gap-3">
+            <Button
+              variant="outlined"
+              color="gray"
+              onClick={handleCloseConfirmDialog}
+              disabled={loading}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="gradient"
+              color="blue"
+              onClick={handleUpdateTerms}
+              disabled={loading}
+              className="flex items-center gap-2"
+            >
               {loading ? (
                 <>
-                  <RefreshCw className="w-5 h-5 animate-spin" />
+                  <RefreshCw className="w-4 h-4 animate-spin" />
                   Saving...
                 </>
               ) : (
                 <>
-                  <Save className="w-5 h-5" />
-                  Save Changes
+                  <CheckCircle className="w-4 h-4" />
+                  Confirm & Save
                 </>
               )}
             </Button>
