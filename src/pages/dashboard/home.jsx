@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Typography,
   Card,
@@ -6,6 +6,7 @@ import {
   CardHeader,
   Chip,
   Avatar,
+  Alert,
 } from "@material-tailwind/react";
 import {
   Users,
@@ -14,7 +15,6 @@ import {
   MousePointerClick,
   CheckCircle,
   TrendingUp,
-  TrendingDown,
   Clock,
   BarChart3,
   PieChart,
@@ -23,6 +23,7 @@ import {
   RefreshCw,
   Briefcase,
   User,
+  AlertCircle,
 } from "lucide-react";
 import {
   Chart as ChartJS,
@@ -50,19 +51,58 @@ ChartJS.register(
   Legend
 );
 
+// Centralized API configuration
+const API_URL = import.meta.env.VITE_API_URL;
+
+// Utility function to safely get token
+const getAuthToken = () => {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    throw new Error("Authentication token not found");
+  }
+  return token;
+};
+
+// Generate dynamic colors for pie chart
+const generateColors = (count) => {
+  const baseColors = [
+    "rgba(59, 130, 246, 0.8)", // blue
+    "rgba(236, 72, 153, 0.8)", // pink
+    "rgba(16, 185, 129, 0.8)", // green
+    "rgba(251, 146, 60, 0.8)", // orange
+    "rgba(139, 92, 246, 0.8)", // purple
+    "rgba(234, 179, 8, 0.8)", // yellow
+  ];
+
+  if (count <= baseColors.length) {
+    return baseColors.slice(0, count);
+  }
+
+  // Generate more colors if needed
+  const additionalColors = [];
+  for (let i = baseColors.length; i < count; i++) {
+    const hue = (i * 360) / count;
+    additionalColors.push(`hsla(${hue}, 70%, 60%, 0.8)`);
+  }
+
+  return [...baseColors, ...additionalColors];
+};
+
 export function Home() {
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [dashboardData, setDashboardData] = useState(null);
 
   useEffect(() => {
     fetchDashboardData();
   }, []);
 
-  const API_URL = import.meta.env.VITE_API_URL;
-
   const fetchDashboardData = async () => {
     try {
-      const token = localStorage.getItem("token");
+      setLoading(true);
+      setError(null);
+
+      const token = getAuthToken();
 
       const response = await fetch(
         `${API_URL}/api/admin/dashboard/analytics/stats`,
@@ -73,18 +113,263 @@ export function Home() {
         }
       );
 
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
       const data = await response.json();
 
       if (data.success) {
         setDashboardData(data.data);
+      } else {
+        throw new Error(data.message || "Failed to fetch dashboard data");
       }
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
+      setError(
+        error.message || "Failed to load dashboard data. Please try again."
+      );
     } finally {
       setLoading(false);
     }
   };
 
+  // Memoized statistics cards data
+  const statisticsCardsData = useMemo(() => {
+    if (!dashboardData?.stats) return [];
+
+    return [
+      {
+        color: "blue",
+        icon: Users,
+        title: "Total Users",
+        value: dashboardData.stats.totalUsers?.value || 0,
+        footer: {
+          color: "text-green-500",
+          value: `+${dashboardData.stats.totalUsers?.growth || 0}%`,
+          label: "than last month",
+          icon: TrendingUp,
+        },
+      },
+      {
+        color: "pink",
+        icon: FileText,
+        title: "Total Profiles",
+        value: dashboardData.stats.totalProfiles?.value || 0,
+        footer: {
+          color: "text-blue-500",
+          value: `${dashboardData.stats.totalProfiles?.today || 0}`,
+          label: "created today",
+          icon: Activity,
+        },
+      },
+      {
+        color: "green",
+        icon: Eye,
+        title: "Total Views",
+        value: dashboardData.stats.totalViews?.value || 0,
+        footer: {
+          color: "text-green-500",
+          value: `${dashboardData.stats.totalViews?.today || 0}`,
+          label: "views today",
+          icon: TrendingUp,
+        },
+      },
+      {
+        color: "orange",
+        icon: MousePointerClick,
+        title: "Total Clicks",
+        value: dashboardData.stats.totalClicks?.value || 0,
+        footer: {
+          color: "text-orange-500",
+          value: "Social Links",
+          label: "engagement",
+          icon: Activity,
+        },
+      },
+      {
+        color: "purple",
+        icon: CheckCircle,
+        title: "Active Profiles",
+        value: dashboardData.stats.activeProfiles?.value || 0,
+        footer: {
+          color: "text-purple-500",
+          value: "Live",
+          label: "profiles",
+          icon: CheckCircle,
+        },
+      },
+    ];
+  }, [dashboardData]);
+
+  // Memoized chart data
+  const viewsChartData = useMemo(() => {
+    const viewsData = dashboardData?.charts?.viewsOverTime || [];
+
+    return {
+      labels: viewsData.map((item) => {
+        const date = new Date(item.date);
+        return date.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        });
+      }),
+      datasets: [
+        {
+          label: "Profile Views",
+          data: viewsData.map((item) => item.count),
+          borderColor: "rgb(59, 130, 246)",
+          backgroundColor: "rgba(59, 130, 246, 0.1)",
+          tension: 0.4,
+          fill: true,
+        },
+      ],
+    };
+  }, [dashboardData]);
+
+  const usersChartData = useMemo(() => {
+    const usersData = dashboardData?.charts?.usersOverTime || [];
+
+    return {
+      labels: usersData.map((item) => {
+        const date = new Date(item.date);
+        return date.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        });
+      }),
+      datasets: [
+        {
+          label: "New Users",
+          data: usersData.map((item) => item.count),
+          backgroundColor: "rgba(236, 72, 153, 0.8)",
+          borderRadius: 6,
+        },
+      ],
+    };
+  }, [dashboardData]);
+
+  const profileTypesData = useMemo(() => {
+    const profilesData = dashboardData?.charts?.profilesByType || [];
+    const colors = generateColors(profilesData.length);
+
+    return {
+      labels: profilesData.map(
+        (item) =>
+          item.profileType.charAt(0).toUpperCase() + item.profileType.slice(1)
+      ),
+      datasets: [
+        {
+          data: profilesData.map((item) => item.count),
+          backgroundColor: colors,
+          borderWidth: 2,
+          borderColor: "#fff",
+        },
+      ],
+    };
+  }, [dashboardData]);
+
+  // Separate chart options for different chart types
+  const lineChartOptions = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: "top",
+          labels: {
+            usePointStyle: true,
+            padding: 15,
+          },
+        },
+        tooltip: {
+          mode: "index",
+          intersect: false,
+        },
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            precision: 0,
+          },
+        },
+        x: {
+          grid: {
+            display: false,
+          },
+        },
+      },
+    }),
+    []
+  );
+
+  const barChartOptions = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: "top",
+          labels: {
+            usePointStyle: true,
+            padding: 15,
+          },
+        },
+        tooltip: {
+          mode: "index",
+          intersect: false,
+        },
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            precision: 0,
+          },
+        },
+        x: {
+          grid: {
+            display: false,
+          },
+        },
+      },
+    }),
+    []
+  );
+
+  const pieChartOptions = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: "top",
+          labels: {
+            usePointStyle: true,
+            padding: 15,
+          },
+        },
+        tooltip: {
+          callbacks: {
+            label: function (context) {
+              const label = context.label || "";
+              const value = context.parsed || 0;
+              const total = context.dataset.data.reduce((a, b) => a + b, 0);
+              const percentage = ((value / total) * 100).toFixed(1);
+              return `${label}: ${value} (${percentage}%)`;
+            },
+          },
+        },
+      },
+    }),
+    []
+  );
+
+  // Loading state
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
@@ -96,152 +381,52 @@ export function Home() {
     );
   }
 
-  const statisticsCardsData = [
-    {
-      color: "blue",
-      icon: Users,
-      title: "Total Users",
-      value: dashboardData?.stats?.totalUsers?.value || 0,
-      footer: {
-        color: "text-green-500",
-        value: `+${dashboardData?.stats?.totalUsers?.growth || 0}%`,
-        label: "than last month",
-        icon: TrendingUp,
-      },
-    },
-    {
-      color: "pink",
-      icon: FileText,
-      title: "Total Profiles",
-      value: dashboardData?.stats?.totalProfiles?.value || 0,
-      footer: {
-        color: "text-blue-500",
-        value: `${dashboardData?.stats?.totalProfiles?.today || 0}`,
-        label: "created today",
-        icon: Activity,
-      },
-    },
-    {
-      color: "green",
-      icon: Eye,
-      title: "Total Views",
-      value: dashboardData?.stats?.totalViews?.value || 0,
-      footer: {
-        color: "text-green-500",
-        value: `${dashboardData?.stats?.totalViews?.today || 0}`,
-        label: "views today",
-        icon: TrendingUp,
-      },
-    },
-    {
-      color: "orange",
-      icon: MousePointerClick,
-      title: "Total Clicks",
-      value: dashboardData?.stats?.totalClicks?.value || 0,
-      footer: {
-        color: "text-orange-500",
-        value: "Social Links",
-        label: "engagement",
-        icon: Activity,
-      },
-    },
-    {
-      color: "purple",
-      icon: CheckCircle,
-      title: "Active Profiles",
-      value: dashboardData?.stats?.activeProfiles?.value || 0,
-      footer: {
-        color: "text-purple-500",
-        value: "Live",
-        label: "profiles",
-        icon: CheckCircle,
-      },
-    },
-  ];
+  // Error state
+  if (error) {
+    return (
+      <div className="mt-12">
+        <Alert
+          color="red"
+          icon={<AlertCircle className="h-6 w-6" />}
+          className="mb-4"
+        >
+          <Typography variant="h6" color="white" className="mb-2">
+            Error Loading Dashboard
+          </Typography>
+          <Typography color="white" className="font-normal">
+            {error}
+          </Typography>
+        </Alert>
+        <div className="flex justify-center mt-6">
+          <button
+            onClick={fetchDashboardData}
+            className="flex items-center gap-2 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+          >
+            <RefreshCw className="w-5 h-5" />
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
-  // Prepare chart data
-  const viewsChartData = {
-    labels:
-      dashboardData?.charts?.viewsOverTime?.map((item) => {
-        const date = new Date(item.date);
-        return date.toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-        });
-      }) || [],
-    datasets: [
-      {
-        label: "Profile Views",
-        data:
-          dashboardData?.charts?.viewsOverTime?.map((item) => item.count) || [],
-        borderColor: "rgb(59, 130, 246)",
-        backgroundColor: "rgba(59, 130, 246, 0.1)",
-        tension: 0.4,
-        fill: true,
-      },
-    ],
-  };
-
-  const usersChartData = {
-    labels:
-      dashboardData?.charts?.usersOverTime?.map((item) => {
-        const date = new Date(item.date);
-        return date.toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-        });
-      }) || [],
-    datasets: [
-      {
-        label: "New Users",
-        data:
-          dashboardData?.charts?.usersOverTime?.map((item) => item.count) || [],
-        backgroundColor: "rgba(236, 72, 153, 0.8)",
-        borderRadius: 6,
-      },
-    ],
-  };
-
-  const profileTypesData = {
-    labels:
-      dashboardData?.charts?.profilesByType?.map(
-        (item) =>
-          item.profileType.charAt(0).toUpperCase() + item.profileType.slice(1)
-      ) || [],
-    datasets: [
-      {
-        data:
-          dashboardData?.charts?.profilesByType?.map((item) => item.count) ||
-          [],
-        backgroundColor: ["rgba(59, 130, 246, 0.8)", "rgba(236, 72, 153, 0.8)"],
-        borderWidth: 2,
-        borderColor: "#fff",
-      },
-    ],
-  };
-
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: true,
-        position: "top",
-        labels: {
-          usePointStyle: true,
-          padding: 15,
-        },
-      },
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-      },
-    },
-  };
+  // No data state
+  if (!dashboardData) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <BarChart3 className="w-16 h-16 text-blue-gray-300 mb-4" />
+        <Typography variant="h6" color="blue-gray" className="mb-2">
+          No Data Available
+        </Typography>
+        <Typography variant="small" color="gray">
+          Dashboard data will appear here once available
+        </Typography>
+      </div>
+    );
+  }
 
   return (
-    <div className="mt-12">
+    <div className="mt-12 px-4 md:px-0">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
@@ -338,8 +523,20 @@ export function Home() {
             </div>
           </CardHeader>
           <CardBody className="px-2 pb-0">
-            <div style={{ height: "300px" }}>
-              <Line data={viewsChartData} options={chartOptions} />
+            <div className="h-[250px] sm:h-[300px]">
+              {viewsChartData.labels.length > 0 ? (
+                <Line
+                  data={viewsChartData}
+                  options={lineChartOptions}
+                  aria-label="Profile views chart showing views over the last 7 days"
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <Typography variant="small" color="gray">
+                    No data available
+                  </Typography>
+                </div>
+              )}
             </div>
           </CardBody>
           <div className="border-t border-blue-gray-50 p-4">
@@ -383,8 +580,20 @@ export function Home() {
             </div>
           </CardHeader>
           <CardBody className="px-2 pb-0">
-            <div style={{ height: "300px" }}>
-              <Bar data={usersChartData} options={chartOptions} />
+            <div className="h-[250px] sm:h-[300px]">
+              {usersChartData.labels.length > 0 ? (
+                <Bar
+                  data={usersChartData}
+                  options={barChartOptions}
+                  aria-label="User registrations chart showing new users in the last 7 days"
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <Typography variant="small" color="gray">
+                    No data available
+                  </Typography>
+                </div>
+              )}
             </div>
           </CardBody>
           <div className="border-t border-blue-gray-50 p-4">
@@ -428,8 +637,20 @@ export function Home() {
             </div>
           </CardHeader>
           <CardBody className="px-2 pb-0">
-            <div style={{ height: "300px" }}>
-              <Pie data={profileTypesData} options={chartOptions} />
+            <div className="h-[250px] sm:h-[300px]">
+              {profileTypesData.labels.length > 0 ? (
+                <Pie
+                  data={profileTypesData}
+                  options={pieChartOptions}
+                  aria-label="Profile types distribution chart"
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <Typography variant="small" color="gray">
+                    No data available
+                  </Typography>
+                </div>
+              )}
             </div>
           </CardBody>
           <div className="border-t border-blue-gray-50 p-4">
@@ -459,7 +680,8 @@ export function Home() {
           </div>
         </CardHeader>
         <CardBody className="overflow-x-auto px-0 pt-0 pb-2">
-          {dashboardData?.topProfiles?.length === 0 ? (
+          {!dashboardData?.topProfiles ||
+          dashboardData.topProfiles.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12">
               <Award className="w-16 h-16 text-blue-gray-300 mb-4" />
               <Typography variant="h6" color="blue-gray" className="mb-2">
@@ -499,7 +721,7 @@ export function Home() {
                 </tr>
               </thead>
               <tbody>
-                {dashboardData?.topProfiles?.map((profile, index) => {
+                {dashboardData.topProfiles.map((profile, index) => {
                   const className = `py-4 px-5 ${
                     index === dashboardData.topProfiles.length - 1
                       ? ""
@@ -536,8 +758,8 @@ export function Home() {
                       <td className={className}>
                         <div className="flex items-center gap-3">
                           <Avatar
-                            src={profile.avatarUrl}
-                            alt={profile.name}
+                            src={profile.avatarUrl || "/default-avatar.png"}
+                            alt={profile.name || "User profile"}
                             size="sm"
                             variant="circular"
                             className="ring-2 ring-blue-gray-100"
@@ -547,13 +769,13 @@ export function Home() {
                             color="blue-gray"
                             className="font-semibold"
                           >
-                            {profile.name}
+                            {profile.name || "Unknown"}
                           </Typography>
                         </div>
                       </td>
                       <td className={className}>
                         <Chip
-                          value={profile.profileType}
+                          value={profile.profileType || "unknown"}
                           variant="gradient"
                           color={
                             profile.profileType === "personal"
@@ -578,7 +800,7 @@ export function Home() {
                             variant="small"
                             className="font-bold text-blue-gray-800"
                           >
-                            {profile.viewCount.toLocaleString()}
+                            {(profile.viewCount || 0).toLocaleString()}
                           </Typography>
                         </div>
                       </td>
