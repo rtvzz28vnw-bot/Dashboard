@@ -41,8 +41,10 @@ import {
   ExternalLink,
   Copy,
   Link as LinkIcon,
+  Download,
 } from "lucide-react";
 import Swal from "sweetalert2";
+import { QRCodeCanvas } from "qrcode.react";
 import UniversalCardPreview from "../../components/shared/UniversalCardPreview";
 
 // Centralized API configuration
@@ -1102,6 +1104,7 @@ export function Orders() {
                   </div>
                 </div>
               </div>
+
               {/* Profile URL Section */}
               {selectedOrder.profileUrl && (
                 <div className="p-4 border-2 border-blue-500 bg-blue-50 rounded-lg">
@@ -1110,28 +1113,28 @@ export function Orders() {
                     className="font-bold uppercase text-blue-800 flex items-center gap-2 mb-3"
                   >
                     <LinkIcon className="w-4 h-4" />
-                    NFC Card Profile URL
+                    NFC Card Profile URL & QR Code
                   </Typography>
-                  <div className="bg-white rounded-lg p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex-1 min-w-0">
-                        <Typography
-                          variant="small"
-                          color="blue-gray"
-                          className="font-semibold mb-2"
-                        >
-                          Public Profile Link:
-                        </Typography>
-                        <a
-                          href={selectedOrder.profileUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm text-blue-600 hover:text-blue-800 font-mono break-all underline flex items-center gap-2"
-                        >
-                          {selectedOrder.profileUrl}
-                          <ExternalLink className="w-4 h-4 flex-shrink-0" />
-                        </a>
-                      </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {/* Profile URL */}
+                    <div className="bg-white rounded-lg p-4">
+                      <Typography
+                        variant="small"
+                        color="blue-gray"
+                        className="font-semibold mb-2"
+                      >
+                        Public Profile Link:
+                      </Typography>
+                      <a
+                        href={selectedOrder.profileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-blue-600 hover:text-blue-800 font-mono break-all underline flex items-center gap-2"
+                      >
+                        {selectedOrder.profileUrl}
+                        <ExternalLink className="w-4 h-4 flex-shrink-0" />
+                      </a>
                       <button
                         onClick={() => {
                           navigator.clipboard.writeText(
@@ -1147,20 +1150,70 @@ export function Orders() {
                             position: "top-end",
                           });
                         }}
-                        className="p-2 hover:bg-blue-100 rounded-lg transition-colors flex-shrink-0"
+                        className="mt-3 w-full flex items-center justify-center gap-2 p-2 hover:bg-blue-50 rounded-lg transition-colors"
                       >
-                        <Copy className="w-5 h-5 text-blue-600" />
+                        <Copy className="w-4 h-4 text-blue-600" />
+                        <span className="text-sm font-medium text-blue-600">
+                          Copy URL
+                        </span>
                       </button>
                     </div>
-                    <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+
+                    {/* QR Code */}
+                    <div className="bg-white rounded-lg p-4 flex flex-col items-center">
                       <Typography
                         variant="small"
-                        className="text-yellow-800 text-xs"
+                        color="blue-gray"
+                        className="font-semibold mb-3 text-center"
                       >
-                        ⚠️ <strong>Important:</strong> This URL must be
-                        programmed into the NFC card
+                        QR Code for NFC Card:
                       </Typography>
+                      <div className="bg-white p-3 rounded-xl border-2 border-gray-200 mb-3">
+                        <QRCodeCanvas
+                          id={`qr-code-${selectedOrder.id}`}
+                          value={selectedOrder.profileUrl}
+                          size={150}
+                          level="H"
+                          includeMargin={true}
+                        />
+                      </div>
+                      <button
+                        onClick={() => {
+                          const canvas = document.getElementById(
+                            `qr-code-${selectedOrder.id}`
+                          );
+                          const url = canvas.toDataURL("image/png");
+                          const link = document.createElement("a");
+                          link.download = `${selectedOrder.orderNumber}-qr-code.png`;
+                          link.href = url;
+                          link.click();
+
+                          Swal.fire({
+                            icon: "success",
+                            title: "Downloaded!",
+                            text: "QR code downloaded successfully",
+                            timer: 2000,
+                            showConfirmButton: false,
+                            toast: true,
+                            position: "top-end",
+                          });
+                        }}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-purple-50 hover:bg-purple-100 text-purple-600 rounded-lg transition-colors"
+                      >
+                        <Download className="w-4 h-4" />
+                        <span className="text-sm font-medium">Download QR</span>
+                      </button>
                     </div>
+                  </div>
+
+                  <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <Typography
+                      variant="small"
+                      className="text-yellow-800 text-xs"
+                    >
+                      ⚠️ <strong>Important:</strong> This URL and QR code must
+                      be programmed into the NFC card
+                    </Typography>
                   </div>
                 </div>
               )}
