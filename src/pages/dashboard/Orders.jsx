@@ -38,6 +38,9 @@ import {
   Filter,
   AlertCircle,
   ChevronDown,
+  ExternalLink,
+  Copy,
+  Link as LinkIcon,
 } from "lucide-react";
 import Swal from "sweetalert2";
 import UniversalCardPreview from "../../components/shared/UniversalCardPreview";
@@ -251,7 +254,7 @@ const OrderCard = ({
           </Button>
           <div className="flex-1">
             <Select
-              size="sm"
+              size="md"
               value={order.orderStatus}
               onChange={(val) => onStatusUpdate(order.id, val)}
               label="Update Status"
@@ -717,7 +720,7 @@ export function Orders() {
             <Chip
               value={`${orders.length} orders`}
               variant="gradient"
-              color="white"
+              color="blue-gray"
               size="sm"
               className="font-semibold"
             />
@@ -900,7 +903,7 @@ export function Orders() {
                             <div className="flex gap-2 items-center">
                               <Tooltip content="View Order Details">
                                 <IconButton
-                                  size="sm"
+                                  size="md"
                                   variant="outlined"
                                   color="green"
                                   onClick={() => viewOrderDetails(order)}
@@ -910,7 +913,7 @@ export function Orders() {
                                 </IconButton>
                               </Tooltip>
                               <Select
-                                size="sm"
+                                size="md"
                                 value={order.orderStatus}
                                 onChange={(val) =>
                                   handleStatusUpdate(order.id, val)
@@ -940,411 +943,471 @@ export function Orders() {
       </Card>
 
       {/* Order Details Modal */}
-      <Dialog
-        open={showOrderModal}
-        handler={() => setShowOrderModal(false)}
-        size="lg"
-        className="shadow-2xl max-h-[95vh] overflow-hidden"
-      >
-        {selectedOrder && (
-          <>
-            <DialogHeader className="flex items-center gap-3 border-b border-blue-gray-100 p-4 sm:p-6">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center">
-                <Eye className="w-5 h-5 text-white" />
+      {selectedOrder && (
+        <Dialog
+          open={showOrderModal}
+          handler={() => setShowOrderModal(false)}
+          size="lg"
+          className="shadow-2xl max-h-[95vh] overflow-hidden"
+        >
+          <DialogHeader className="flex items-center gap-3 border-b border-blue-gray-100 p-4 sm:p-6">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center">
+              <Eye className="w-5 h-5 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <Typography
+                variant="h5"
+                color="blue-gray"
+                className="text-lg sm:text-xl"
+              >
+                Order Details
+              </Typography>
+              <Typography
+                variant="small"
+                color="gray"
+                className="font-mono font-normal truncate"
+              >
+                {selectedOrder.orderNumber}
+              </Typography>
+            </div>
+          </DialogHeader>
+
+          <DialogBody
+            divider
+            className="max-h-[60vh] overflow-y-auto p-4 sm:p-6"
+          >
+            <div className="space-y-4 sm:space-y-6">
+              {/* Order Status Banner */}
+              <div className="p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center">
+                      {React.createElement(
+                        statusIcons[selectedOrder.orderStatus],
+                        {
+                          className: "w-6 h-6 text-blue-600",
+                        }
+                      )}
+                    </div>
+                    <div>
+                      <Typography
+                        variant="small"
+                        color="blue-gray"
+                        className="font-semibold"
+                      >
+                        Current Status
+                      </Typography>
+                      <Chip
+                        variant="gradient"
+                        value={selectedOrder.orderStatus}
+                        size="sm"
+                        color={statusColors[selectedOrder.orderStatus]}
+                        className="capitalize mt-1"
+                      />
+                    </div>
+                  </div>
+                  <Typography variant="h6" color="blue" className="font-bold">
+                    {selectedOrder.totalAmount} JOD
+                  </Typography>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <Typography
-                  variant="h5"
-                  color="blue-gray"
-                  className="text-lg sm:text-xl"
-                >
-                  Order Details
-                </Typography>
+
+              {/* Customer Info */}
+              <div className="p-4 border border-blue-gray-100 rounded-lg">
                 <Typography
                   variant="small"
-                  color="gray"
-                  className="font-mono font-normal truncate"
+                  className="font-bold uppercase text-blue-gray-600 flex items-center gap-2 mb-4"
                 >
-                  {selectedOrder.orderNumber}
+                  <User className="w-4 h-4" />
+                  Customer Information
                 </Typography>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center flex-shrink-0">
+                      <Typography
+                        variant="small"
+                        className="font-bold text-white"
+                      >
+                        {selectedOrder.customerFirstName
+                          ?.charAt(0)
+                          .toUpperCase()}
+                      </Typography>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <Typography
+                        variant="small"
+                        color="blue-gray"
+                        className="font-semibold"
+                      >
+                        Name
+                      </Typography>
+                      <Typography
+                        variant="small"
+                        color="gray"
+                        className="break-words"
+                      >
+                        {selectedOrder.customerFirstName}{" "}
+                        {selectedOrder.customerLastName}
+                      </Typography>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Mail className="w-4 h-4 text-blue-gray-400 mt-1 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <Typography
+                        variant="small"
+                        color="blue-gray"
+                        className="font-semibold"
+                      >
+                        Email
+                      </Typography>
+                      <Typography
+                        variant="small"
+                        color="gray"
+                        className="break-words"
+                      >
+                        {selectedOrder.customerEmail}
+                      </Typography>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Phone className="w-4 h-4 text-blue-gray-400 mt-1 flex-shrink-0" />
+                    <div>
+                      <Typography
+                        variant="small"
+                        color="blue-gray"
+                        className="font-semibold"
+                      >
+                        Phone
+                      </Typography>
+                      <Typography variant="small" color="gray">
+                        {selectedOrder.customerPhone}
+                      </Typography>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Calendar className="w-4 h-4 text-blue-gray-400 mt-1 flex-shrink-0" />
+                    <div>
+                      <Typography
+                        variant="small"
+                        color="blue-gray"
+                        className="font-semibold"
+                      >
+                        Order Date
+                      </Typography>
+                      <Typography variant="small" color="gray">
+                        {new Date(selectedOrder.createdAt).toLocaleString()}
+                      </Typography>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </DialogHeader>
-
-            <DialogBody
-              divider
-              className="max-h-[60vh] overflow-y-auto p-4 sm:p-6"
-            >
-              <div className="space-y-4 sm:space-y-6">
-                {/* Order Status Banner */}
-                <div className="p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200">
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              {/* Profile URL Section */}
+              {selectedOrder.profileUrl && (
+                <div className="p-4 border-2 border-blue-500 bg-blue-50 rounded-lg">
+                  <Typography
+                    variant="small"
+                    className="font-bold uppercase text-blue-800 flex items-center gap-2 mb-3"
+                  >
+                    <LinkIcon className="w-4 h-4" />
+                    NFC Card Profile URL
+                  </Typography>
+                  <div className="bg-white rounded-lg p-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center">
-                        {React.createElement(
-                          statusIcons[selectedOrder.orderStatus],
-                          {
-                            className: "w-6 h-6 text-blue-600",
-                          }
+                      <div className="flex-1 min-w-0">
+                        <Typography
+                          variant="small"
+                          color="blue-gray"
+                          className="font-semibold mb-2"
+                        >
+                          Public Profile Link:
+                        </Typography>
+                        <a
+                          href={selectedOrder.profileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-blue-600 hover:text-blue-800 font-mono break-all underline flex items-center gap-2"
+                        >
+                          {selectedOrder.profileUrl}
+                          <ExternalLink className="w-4 h-4 flex-shrink-0" />
+                        </a>
+                      </div>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(
+                            selectedOrder.profileUrl
+                          );
+                          Swal.fire({
+                            icon: "success",
+                            title: "Copied!",
+                            text: "Profile URL copied to clipboard",
+                            timer: 2000,
+                            showConfirmButton: false,
+                            toast: true,
+                            position: "top-end",
+                          });
+                        }}
+                        className="p-2 hover:bg-blue-100 rounded-lg transition-colors flex-shrink-0"
+                      >
+                        <Copy className="w-5 h-5 text-blue-600" />
+                      </button>
+                    </div>
+                    <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <Typography
+                        variant="small"
+                        className="text-yellow-800 text-xs"
+                      >
+                        ⚠️ <strong>Important:</strong> This URL must be
+                        programmed into the NFC card
+                      </Typography>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Shipping Info */}
+              <div className="p-4 border border-blue-gray-100 rounded-lg">
+                <Typography
+                  variant="small"
+                  className="font-bold uppercase text-blue-gray-600 flex items-center gap-2 mb-4"
+                >
+                  <MapPin className="w-4 h-4" />
+                  Shipping Address
+                </Typography>
+                <Card className="bg-blue-gray-50">
+                  <CardBody className="p-4">
+                    <div className="flex items-start gap-3">
+                      <MapPin className="w-5 h-5 text-blue-600 mt-1 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <Typography
+                          variant="small"
+                          className="font-medium text-blue-gray-800 break-words"
+                        >
+                          {selectedOrder.shippingAddress}
+                        </Typography>
+                        <Typography variant="small" color="gray">
+                          {selectedOrder.shippingCity},{" "}
+                          {selectedOrder.shippingCountry}
+                        </Typography>
+                        {selectedOrder.shippingNotes && (
+                          <div className="mt-3 p-3 bg-white rounded border border-blue-gray-200">
+                            <Typography
+                              variant="small"
+                              color="blue-gray"
+                              className="font-semibold mb-1"
+                            >
+                              Delivery Notes:
+                            </Typography>
+                            <Typography
+                              variant="small"
+                              color="gray"
+                              className="italic break-words"
+                            >
+                              {selectedOrder.shippingNotes}
+                            </Typography>
+                          </div>
                         )}
                       </div>
-                      <div>
-                        <Typography
-                          variant="small"
-                          color="blue-gray"
-                          className="font-semibold"
-                        >
-                          Current Status
-                        </Typography>
-                        <Chip
-                          variant="gradient"
-                          value={selectedOrder.orderStatus}
-                          size="sm"
-                          color={statusColors[selectedOrder.orderStatus]}
-                          className="capitalize mt-1"
-                        />
-                      </div>
                     </div>
-                    <Typography variant="h6" color="blue" className="font-bold">
-                      {selectedOrder.totalAmount} JOD
-                    </Typography>
-                  </div>
-                </div>
+                  </CardBody>
+                </Card>
+              </div>
 
-                {/* Customer Info */}
-                <div className="p-4 border border-blue-gray-100 rounded-lg">
-                  <Typography
-                    variant="small"
-                    className="font-bold uppercase text-blue-gray-600 flex items-center gap-2 mb-4"
-                  >
-                    <User className="w-4 h-4" />
-                    Customer Information
-                  </Typography>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center flex-shrink-0">
-                        <Typography
-                          variant="small"
-                          className="font-bold text-white"
-                        >
-                          {selectedOrder.customerFirstName
-                            ?.charAt(0)
-                            .toUpperCase()}
-                        </Typography>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <Typography
-                          variant="small"
-                          color="blue-gray"
-                          className="font-semibold"
-                        >
-                          Name
-                        </Typography>
-                        <Typography
-                          variant="small"
-                          color="gray"
-                          className="break-words"
-                        >
-                          {selectedOrder.customerFirstName}{" "}
-                          {selectedOrder.customerLastName}
-                        </Typography>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <Mail className="w-4 h-4 text-blue-gray-400 mt-1 flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <Typography
-                          variant="small"
-                          color="blue-gray"
-                          className="font-semibold"
-                        >
-                          Email
-                        </Typography>
-                        <Typography
-                          variant="small"
-                          color="gray"
-                          className="break-words"
-                        >
-                          {selectedOrder.customerEmail}
-                        </Typography>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <Phone className="w-4 h-4 text-blue-gray-400 mt-1 flex-shrink-0" />
-                      <div>
-                        <Typography
-                          variant="small"
-                          color="blue-gray"
-                          className="font-semibold"
-                        >
-                          Phone
-                        </Typography>
-                        <Typography variant="small" color="gray">
-                          {selectedOrder.customerPhone}
-                        </Typography>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <Calendar className="w-4 h-4 text-blue-gray-400 mt-1 flex-shrink-0" />
-                      <div>
-                        <Typography
-                          variant="small"
-                          color="blue-gray"
-                          className="font-semibold"
-                        >
-                          Order Date
-                        </Typography>
-                        <Typography variant="small" color="gray">
-                          {new Date(selectedOrder.createdAt).toLocaleString()}
-                        </Typography>
-                      </div>
+              {/* Card Design */}
+              <div className="p-4 border border-blue-gray-100 rounded-lg">
+                <Typography
+                  variant="small"
+                  className="font-bold uppercase text-blue-gray-600 flex items-center gap-2 mb-4"
+                >
+                  <CreditCard className="w-4 h-4" />
+                  Card Design
+                </Typography>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                  <div className="flex items-start gap-2">
+                    <CreditCard className="w-4 h-4 text-blue-gray-400 mt-1" />
+                    <div>
+                      <Typography
+                        variant="small"
+                        color="blue-gray"
+                        className="font-semibold"
+                      >
+                        Type
+                      </Typography>
+                      <Chip
+                        variant="gradient"
+                        value={selectedOrder.cardType}
+                        size="sm"
+                        color={
+                          selectedOrder.cardType === "personal"
+                            ? "blue"
+                            : "purple"
+                        }
+                        className="capitalize w-fit mt-1"
+                      />
                     </div>
                   </div>
-                </div>
 
-                {/* Shipping Info */}
-                <div className="p-4 border border-blue-gray-100 rounded-lg">
-                  <Typography
-                    variant="small"
-                    className="font-bold uppercase text-blue-gray-600 flex items-center gap-2 mb-4"
-                  >
-                    <MapPin className="w-4 h-4" />
-                    Shipping Address
-                  </Typography>
-                  <Card className="bg-blue-gray-50">
-                    <CardBody className="p-4">
-                      <div className="flex items-start gap-3">
-                        <MapPin className="w-5 h-5 text-blue-600 mt-1 flex-shrink-0" />
-                        <div className="flex-1 min-w-0">
+                  {selectedOrder.cardDesignMode !== "ai" &&
+                    !selectedOrder.customDesignUrl &&
+                    selectedOrder.cardTemplate && (
+                      <div className="flex items-start gap-2">
+                        <FileText className="w-4 h-4 text-blue-gray-400 mt-1" />
+                        <div>
                           <Typography
                             variant="small"
-                            className="font-medium text-blue-gray-800 break-words"
+                            color="blue-gray"
+                            className="font-semibold"
                           >
-                            {selectedOrder.shippingAddress}
+                            Template
                           </Typography>
                           <Typography variant="small" color="gray">
-                            {selectedOrder.shippingCity},{" "}
-                            {selectedOrder.shippingCountry}
+                            {selectedOrder.cardTemplate}
                           </Typography>
-                          {selectedOrder.shippingNotes && (
-                            <div className="mt-3 p-3 bg-white rounded border border-blue-gray-200">
-                              <Typography
-                                variant="small"
-                                color="blue-gray"
-                                className="font-semibold mb-1"
-                              >
-                                Delivery Notes:
-                              </Typography>
-                              <Typography
-                                variant="small"
-                                color="gray"
-                                className="italic break-words"
-                              >
-                                {selectedOrder.shippingNotes}
-                              </Typography>
-                            </div>
-                          )}
                         </div>
                       </div>
-                    </CardBody>
-                  </Card>
-                </div>
+                    )}
 
-                {/* Card Design */}
-                <div className="p-4 border border-blue-gray-100 rounded-lg">
-                  <Typography
-                    variant="small"
-                    className="font-bold uppercase text-blue-gray-600 flex items-center gap-2 mb-4"
-                  >
-                    <CreditCard className="w-4 h-4" />
-                    Card Design
-                  </Typography>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                    <div className="flex items-start gap-2">
-                      <CreditCard className="w-4 h-4 text-blue-gray-400 mt-1" />
-                      <div>
-                        <Typography
-                          variant="small"
-                          color="blue-gray"
-                          className="font-semibold"
-                        >
-                          Type
-                        </Typography>
-                        <Chip
-                          variant="gradient"
-                          value={selectedOrder.cardType}
-                          size="sm"
-                          color={
-                            selectedOrder.cardType === "personal"
-                              ? "blue"
-                              : "purple"
-                          }
-                          className="capitalize w-fit mt-1"
-                        />
-                      </div>
+                  <div className="flex items-start gap-2">
+                    <Palette className="w-4 h-4 text-blue-gray-400 mt-1" />
+                    <div>
+                      <Typography
+                        variant="small"
+                        color="blue-gray"
+                        className="font-semibold"
+                      >
+                        Design Mode
+                      </Typography>
+                      <Chip
+                        variant="ghost"
+                        value={
+                          selectedOrder.customDesignUrl
+                            ? "Custom Upload"
+                            : selectedOrder.cardDesignMode === "ai"
+                            ? "AI Generated"
+                            : selectedOrder.cardDesignMode === "template"
+                            ? "Template"
+                            : "Manual"
+                        }
+                        size="sm"
+                        className="w-fit mt-1"
+                      />
                     </div>
+                  </div>
 
-                    {selectedOrder.cardDesignMode !== "ai" &&
-                      !selectedOrder.customDesignUrl &&
-                      selectedOrder.cardTemplate && (
-                        <div className="flex items-start gap-2">
-                          <FileText className="w-4 h-4 text-blue-gray-400 mt-1" />
-                          <div>
+                  {selectedOrder.cardDesignMode === "manual" &&
+                    selectedOrder.cardColor && (
+                      <div className="flex items-start gap-2">
+                        <Palette className="w-4 h-4 text-blue-gray-400 mt-1" />
+                        <div>
+                          <Typography
+                            variant="small"
+                            color="blue-gray"
+                            className="font-semibold"
+                          >
+                            Color
+                          </Typography>
+                          <div className="flex items-center gap-2 mt-1">
+                            <div
+                              className="w-8 h-8 rounded-lg border-2 border-gray-300 shadow-sm"
+                              style={{
+                                backgroundColor: selectedOrder.cardColor,
+                              }}
+                            />
                             <Typography
                               variant="small"
-                              color="blue-gray"
-                              className="font-semibold"
+                              className="font-mono text-blue-gray-700"
                             >
-                              Template
-                            </Typography>
-                            <Typography variant="small" color="gray">
-                              {selectedOrder.cardTemplate}
+                              {selectedOrder.cardColor}
                             </Typography>
                           </div>
                         </div>
-                      )}
-
-                    <div className="flex items-start gap-2">
-                      <Palette className="w-4 h-4 text-blue-gray-400 mt-1" />
-                      <div>
-                        <Typography
-                          variant="small"
-                          color="blue-gray"
-                          className="font-semibold"
-                        >
-                          Design Mode
-                        </Typography>
-                        <Chip
-                          variant="ghost"
-                          value={
-                            selectedOrder.customDesignUrl
-                              ? "Custom Upload"
-                              : selectedOrder.cardDesignMode === "ai"
-                              ? "AI Generated"
-                              : selectedOrder.cardDesignMode === "template"
-                              ? "Template"
-                              : "Manual"
-                          }
-                          size="sm"
-                          className="w-fit mt-1"
-                        />
                       </div>
-                    </div>
-
-                    {selectedOrder.cardDesignMode === "manual" &&
-                      selectedOrder.cardColor && (
-                        <div className="flex items-start gap-2">
-                          <Palette className="w-4 h-4 text-blue-gray-400 mt-1" />
-                          <div>
-                            <Typography
-                              variant="small"
-                              color="blue-gray"
-                              className="font-semibold"
-                            >
-                              Color
-                            </Typography>
-                            <div className="flex items-center gap-2 mt-1">
-                              <div
-                                className="w-8 h-8 rounded-lg border-2 border-gray-300 shadow-sm"
-                                style={{
-                                  backgroundColor: selectedOrder.cardColor,
-                                }}
-                              />
-                              <Typography
-                                variant="small"
-                                className="font-mono text-blue-gray-700"
-                              >
-                                {selectedOrder.cardColor}
-                              </Typography>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                  </div>
-
-                  {/* Card Preview */}
-                  <div className="flex justify-center mt-4">
-                    <CardDesignPreview order={selectedOrder} />
-                  </div>
+                    )}
                 </div>
 
-                {/* Payment & Amount */}
-                <div className="p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-lg border border-green-200">
-                  <Typography
-                    variant="small"
-                    className="font-bold uppercase text-green-800 flex items-center gap-2 mb-4"
-                  >
-                    <CreditCard className="w-4 h-4" />
-                    Payment Information
-                  </Typography>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center">
-                        <CreditCard className="w-5 h-5 text-green-600" />
-                      </div>
-                      <div>
-                        <Typography
-                          variant="small"
-                          color="blue-gray"
-                          className="font-semibold"
-                        >
-                          Payment Method
-                        </Typography>
-                        <Typography
-                          variant="small"
-                          className="text-green-700 font-medium"
-                        >
-                          Cash on Delivery
-                        </Typography>
-                      </div>
+                {/* Card Preview */}
+                <div className="flex justify-center mt-4">
+                  <CardDesignPreview order={selectedOrder} />
+                </div>
+              </div>
+
+              {/* Payment & Amount */}
+              <div className="p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-lg border border-green-200">
+                <Typography
+                  variant="small"
+                  className="font-bold uppercase text-green-800 flex items-center gap-2 mb-4"
+                >
+                  <CreditCard className="w-4 h-4" />
+                  Payment Information
+                </Typography>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center">
+                      <CreditCard className="w-5 h-5 text-green-600" />
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center">
-                        <TrendingUp className="w-5 h-5 text-green-600" />
-                      </div>
-                      <div>
-                        <Typography
-                          variant="small"
-                          color="blue-gray"
-                          className="font-semibold"
-                        >
-                          Total Amount
-                        </Typography>
-                        <Typography
-                          variant="h6"
-                          color="green"
-                          className="font-bold"
-                        >
-                          {selectedOrder.totalAmount} JOD
-                        </Typography>
-                      </div>
+                    <div>
+                      <Typography
+                        variant="small"
+                        color="blue-gray"
+                        className="font-semibold"
+                      >
+                        Payment Method
+                      </Typography>
+                      <Typography
+                        variant="small"
+                        className="text-green-700 font-medium"
+                      >
+                        Cash on Delivery
+                      </Typography>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center">
+                      <TrendingUp className="w-5 h-5 text-green-600" />
+                    </div>
+                    <div>
+                      <Typography
+                        variant="small"
+                        color="blue-gray"
+                        className="font-semibold"
+                      >
+                        Total Amount
+                      </Typography>
+                      <Typography
+                        variant="h6"
+                        color="green"
+                        className="font-bold"
+                      >
+                        {selectedOrder.totalAmount} JOD
+                      </Typography>
                     </div>
                   </div>
                 </div>
               </div>
-            </DialogBody>
+            </div>
+          </DialogBody>
 
-            <DialogFooter className="gap-2 sm:gap-3 p-4 sm:p-6">
-              <Button
-                variant="text"
-                color="blue-gray"
-                onClick={() => setShowOrderModal(false)}
-                className="flex-1 sm:flex-initial"
-              >
-                Close
-              </Button>
-              <Button
-                variant="gradient"
-                color="blue"
-                className="flex items-center gap-2 flex-1 sm:flex-initial"
-                onClick={() => window.print()}
-              >
-                <FileText className="w-4 h-4" />
-                Print Order
-              </Button>
-            </DialogFooter>
-          </>
-        )}
-      </Dialog>
+          <DialogFooter className="gap-2 sm:gap-3 p-4 sm:p-6">
+            <Button
+              variant="text"
+              color="blue-gray"
+              onClick={() => setShowOrderModal(false)}
+              className="flex-1 sm:flex-initial"
+            >
+              Close
+            </Button>
+            <Button
+              variant="gradient"
+              color="blue"
+              className="flex items-center gap-2 flex-1 sm:flex-initial"
+              onClick={() => window.print()}
+            >
+              <FileText className="w-4 h-4" />
+              Print Order
+            </Button>
+          </DialogFooter>
+        </Dialog>
+      )}
     </div>
   );
 }
