@@ -8,6 +8,7 @@ import {
   ArrowRightOnRectangleIcon,
   BellIcon,
   ShoppingCartIcon,
+  ShoppingBagIcon,
 } from "@heroicons/react/24/solid";
 import Home from "./pages/dashboard/home";
 import User from "./pages/dashboard/Users";
@@ -18,6 +19,7 @@ import NFC from "./pages/dashboard/NFC";
 import Terms from "./pages/dashboard/Terms";
 import Privecy from "./pages/dashboard/Privecy";
 import { SignIn } from "@/pages/auth";
+import Products from "./pages/dashboard/Products";
 
 const icon = {
   className: "w-5 h-5 text-inherit",
@@ -74,6 +76,12 @@ export const routes = [
         name: "NFC",
         path: "/nfc",
         element: <NFC />,
+      },
+      {
+        icon: <ShoppingBagIcon {...icon} />,
+        name: "products",
+        path: "/products",
+        element: <Products />,
       },
     ],
   },
